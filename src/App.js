@@ -1,10 +1,17 @@
+// App.js
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-import CoffeeSection from './components/CoffeeSection'; // Import CoffeeSection
+import CoffeeSection from './components/CoffeeSection';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 import './App.css';
 import cafeHomeBg from './cafe-home-bg.jpeg';
+import { useNavigate } from 'react-router-dom';
 
-const App = () => {
+const Home = () => {
+  const navigate = useNavigate();
+
   return (
     <div>
       <Dashboard />
@@ -16,7 +23,7 @@ const App = () => {
       >
         <div className="home-content">
           <h1>
-            WELCOME TO <span className="caffinity-highlight">CAFFINITY </span>
+            WELCOME TO <span className="caffinity-highlight">CAFFINITY</span>
           </h1>
           <p>
             Where every cup tells a story. Experience the perfect blend of artisanal coffee
@@ -34,7 +41,7 @@ const App = () => {
       </section>
 
       {/* Coffee Section */}
-      <CoffeeSection /> {/* Replace the static coffee section with CoffeeSection */}
+      <CoffeeSection />
 
       {/* Desserts Section */}
       <section id="desserts" className="section">
@@ -48,6 +55,18 @@ const App = () => {
         <p>Learn more about Caffinity.</p>
       </section>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </Router>
   );
 };
 

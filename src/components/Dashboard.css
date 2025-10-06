@@ -31,24 +31,26 @@
 .navigation {
   display: flex;
   gap: 100px;
-  
 }
 
+/* Style for all navigation links including Login */
 .navigation a {
   text-decoration: none;
   font-size: 1rem;
   color: #4a4a4a;
   padding: 8px 12px;
-  transition: color 0.3s;
-  padding: 8px 12px; /* Adds clickable space */
-  border-radius: 6px; /* Smooth rounded edges */
+  border-radius: 6px;
   transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top:8px; /* Align with cart icon */
 }
 
 .navigation a:hover {
   background-color: #8b4513; /* Coffee-like brown */
   color: white; /* Highlight text */
 }
+
 .cart-container {
   display: flex;
   align-items: center;
@@ -60,10 +62,21 @@
   height: 30px;
   padding: 8px 12px; /* Adds clickable space */
   border-radius: 6px;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease;
   cursor: pointer;
 }
-.cart-icon:hover{
-    background-color: #8b4513; /* Coffee-like brown */
-    filter: brightness(1) invert(0);
+
+.cart-icon:hover {
+  background-color: #8b4513; /* Coffee-like brown */
+  filter: brightness(1) invert(0);
+}
+
+/* Remove the separate login-link class since we're using the same styling for all nav links */
+.login-link {
+  /* Inherits all styles from .navigation a */
+}
+
+/* Hide the old button element */
+.nav-login-button {
+  display: none;
 }

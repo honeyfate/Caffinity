@@ -1,4 +1,13 @@
-/* General Section Styling */
+html, body {
+
+  height: auto;
+
+  overflow-y: auto;
+
+  scroll-behavior: smooth; /* smooth scrolling for anchors */
+
+}
+ /* General Section Styling */
 .section {
   padding: 50px;
   text-align: center;

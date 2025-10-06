@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import '../css/Register.css';
 import caffinityLogo from '../../caffinity-logo.png';
 
-
 const Register = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -21,7 +20,6 @@ const Register = () => {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    // TODO: Replace with real registration logic
     if (form.firstName && form.lastName && form.email && form.phoneNumber && form.password && form.confirmPassword) {
       if (form.password !== form.confirmPassword) {
         alert('Passwords do not match!');
@@ -36,63 +34,87 @@ const Register = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-form-wrapper"> {/* New wrapper for the form to manage background and overlay */}
-        <div className="logo-section">
-           <img src={caffinityLogo} alt="Caffinity Logo" className="logo-image" />
-          <h1 className="app-title">CAFFINITY</h1>
-          <p className="app-slogan">Join our coffee community today</p>
-        </div>
-
+      <div className="auth-form-wrapper">
         <form className="auth-form" onSubmit={handleRegister}>
-          <p className="form-description">Sign up for exclusive coffee experiences</p>
+          {/* MOVED LOGO SECTION INSIDE THE FORM */}
+          <div className="logo-section">
+            <img src={caffinityLogo} alt="Caffinity Logo" className="logo-icon" />
+            <h1 className="app-title">CAFFINITY</h1>
+            <p className="app-slogan">Join our coffee community today</p>
+          </div>
+
           <div className="name-fields">
+            <div className="form-group">
+              <input 
+                type="text" 
+                name="firstName"
+                placeholder="First Name" 
+                value={form.firstName} 
+                onChange={handleChange} 
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input 
+                type="text" 
+                name="lastName"
+                placeholder="Last Name" 
+                value={form.lastName} 
+                onChange={handleChange} 
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="form-group">
             <input 
-              type="text" 
-              name="firstName"
-              placeholder="First Name" 
-              value={form.firstName} 
+              type="email" 
+              name="email"
+              placeholder="Email" 
+              value={form.email} 
               onChange={handleChange} 
-              className="name-input"
-            />
-            <input 
-              type="text" 
-              name="lastName"
-              placeholder="Last Name" 
-              value={form.lastName} 
-              onChange={handleChange} 
-              className="name-input"
+              required
             />
           </div>
-          <input 
-            type="email" 
-            name="email"
-            placeholder="Email" 
-            value={form.email} 
-            onChange={handleChange} 
-          />
-          <input 
-            type="tel" // Use type="tel" for phone numbers
-            name="phoneNumber"
-            placeholder="Phone Number" 
-            value={form.phoneNumber} 
-            onChange={handleChange} 
-          />
-          <input 
-            type="password" 
-            name="password"
-            placeholder="Password" 
-            value={form.password} 
-            onChange={handleChange} 
-          />
-          <input 
-            type="password" 
-            name="confirmPassword"
-            placeholder="Confirm Password" 
-            value={form.confirmPassword} 
-            onChange={handleChange} 
-          />
-          <button type="submit" className="create-account-button">Create Account</button>
-          <p className="login-link-text">Already have an account? <a href="/login" className="login-link">Sign In Here</a></p>
+          
+          <div className="form-group">
+            <input 
+              type="tel"
+              name="phoneNumber"
+              placeholder="Phone Number" 
+              value={form.phoneNumber} 
+              onChange={handleChange} 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <input 
+              type="password" 
+              name="password"
+              placeholder="Password" 
+              value={form.password} 
+              onChange={handleChange} 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <input 
+              type="password" 
+              name="confirmPassword"
+              placeholder="Confirm Password" 
+              value={form.confirmPassword} 
+              onChange={handleChange} 
+              required
+            />
+          </div>
+          
+          <button type="submit" className="create-account-button">
+            Create Account
+          </button>
+          
+          <a href="/login" className="login-link">Already have an account? Sign in</a>
         </form>
       </div>
     </div>

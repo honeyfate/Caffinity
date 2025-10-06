@@ -1,0 +1,69 @@
+.dashboard {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  white-space: nowrap; /* Prevents text from moving to the next line */
+  overflow-x: auto; /* Allows scrolling horizontally if too small */
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4a4a4a;
+}
+
+.navigation {
+  display: flex;
+  gap: 100px;
+  
+}
+
+.navigation a {
+  text-decoration: none;
+  font-size: 1rem;
+  color: #4a4a4a;
+  padding: 8px 12px;
+  transition: color 0.3s;
+  padding: 8px 12px; /* Adds clickable space */
+  border-radius: 6px; /* Smooth rounded edges */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navigation a:hover {
+  background-color: #8b4513; /* Coffee-like brown */
+  color: white; /* Highlight text */
+}
+.cart-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-right: 50px;
+}
+
+.cart-icon {
+  height: 30px;
+  padding: 8px 12px; /* Adds clickable space */
+  border-radius: 6px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+}
+.cart-icon:hover{
+    background-color: #8b4513; /* Coffee-like brown */
+    filter: brightness(1) invert(0);
+}

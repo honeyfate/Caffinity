@@ -1,0 +1,377 @@
+/* ===== Prevent Background Scrolling When Modal is Open ===== */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* ===== Base Section Styling ===== */
+.coffee-section {
+  padding: 50px;
+  text-align: center;
+  background-color: #f9f9f9;
+  transition: 0.3s ease;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  color: #8b4513;
+  margin-bottom: 30px;
+}
+
+.coffee-cards {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* ===== Coffee Card Styling ===== */
+.coffee-card {
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  width: 250px;
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.coffee-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.coffee-section.editing-mode .coffee-card {
+  transform: scale(0.8); /* Minimize the card size */
+  opacity: 0.5; /* Reduce visibility */
+  pointer-events: none; /* Disable interactions */
+}
+
+.coffee-card.active-card {
+  opacity: 1;
+  pointer-events: auto;
+  border: 2px solid #8b4513;
+  transform: scale(1.03);
+  transition: transform 0.3s ease;
+}
+
+.coffee-image {
+  width: 100%;
+  border-radius: 15px;
+  margin-bottom: 10px;
+}
+
+.coffee-name {
+  font-size: 1.3rem;
+  color: #4a4a4a;
+  margin-bottom: 8px;
+}
+
+.coffee-description {
+  font-size: 0.9rem;
+  color: #6c6c6c;
+  margin-bottom: 12px;
+}
+
+.coffee-price {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #8b4513;
+  margin-bottom: 15px;
+}
+
+.edit-menu-button {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  color: white;
+  background-color: #8b4513;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.edit-menu-button:hover {
+  background-color: #5a2e1d;
+}
+
+/* ===== Modal Overlay ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(3px); /* Subtle blur effect */
+  background: rgba(0, 0, 0, 0.35); /* Slightly lighter overlay */
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center;     /* Center vertically */
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== Modal Content (Centered Card) ===== */
+.modal-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  width: 280px; /* Adjust width */
+  max-width: 90%;
+  padding: 15px; /* Compact padding */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  animation: scaleUp 0.3s ease;
+  z-index: 3000;
+
+  /* Ensure it stays perfectly centered */
+  transform: translate(0, 0);
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.exit-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #8b4513;
+  transition: color 0.3s;
+}
+
+.exit-button:hover {
+  color: #5a2e1d;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  color: #6c6c6c;
+  margin-bottom: 15px;
+}
+
+/* ===== Image Upload ===== */
+.image-upload-container {
+  position: relative;
+  text-align: center;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.modal-image {
+  width: 100%;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.modal-image:hover {
+  opacity: 0.8;
+}
+
+.image-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.image-upload-container:hover .image-overlay {
+  opacity: 1;
+}
+
+/* ===== Modal Inputs ===== */
+.modal-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.95rem;
+}
+
+/* ===== Modal Overlay ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(3px); /* Subtle blur effect */
+  background: rgba(0, 0, 0, 0.35); /* Slightly lighter overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== Modal Content (Smaller Card) ===== */
+.modal-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  width: 280px; /* Reduced width */
+  max-width: 90%;
+  padding: 15px; /* Reduced padding */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  animation: scaleUp 0.3s ease;
+  z-index: 3000;
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ===== Exit Button ===== */
+.exit-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #8b4513;
+  transition: color 0.3s;
+}
+
+.exit-button:hover {
+  color: #5a2e1d;
+}
+
+/* ===== Modal Subtitle ===== */
+.modal-subtitle {
+  font-size: 0.85rem;
+  color: #6c6c6c;
+  margin-bottom: 12px;
+}
+
+/* ===== Image Upload ===== */
+.image-upload-container {
+  position: relative;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.modal-image {
+  width: 100%;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.modal-image:hover {
+  opacity: 0.8;
+}
+
+.image-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.image-upload-container:hover .image-overlay {
+  opacity: 1;
+}
+
+/* ===== Modal Inputs (Smaller Fields) ===== */
+.modal-input {
+  width: 100%;
+  padding: 6px 8px; /* Compact padding */
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  background-color: #fafafa;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  box-sizing: border-box;
+  resize: none; /* Prevent resizing */
+}
+
+/* Focus state for better visibility */
+.modal-input:focus {
+  border-color: #8b4513;
+  background-color: #fff;
+  outline: none;
+}
+/* ===== Textarea for Description ===== */
+.modal-input.description {
+  height: 60px; /* Slightly larger than input fields */
+  line-height: 1.4;
+  overflow-y: auto; /* Scroll if text exceeds area */
+}
+
+/* Placeholder styling */
+.modal-input::placeholder {
+  font-size: 0.8rem;
+  color: #999;
+}
+/* ===== Modal Actions ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cancel-button {
+  background: #ddd;
+  border: none;
+  padding: 6px 14px; /* Smaller button */
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.3s;
+}
+
+.cancel-button:hover {
+  background: #bbb;
+}
+
+.save-button {
+  background: #8b4513;
+  color: white;
+  border: none;
+  padding: 6px 14px; /* Smaller button */
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.3s;
+}
+
+.save-button:hover {
+  background: #5a2e1d;
+}

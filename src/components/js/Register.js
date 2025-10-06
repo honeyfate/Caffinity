@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Register.css';
+import '../css/Register.css';
 import caffinityLogo from '../../caffinity-logo.png';
 
 

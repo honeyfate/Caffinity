@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import './CoffeeSection.css';
-import cappuccinoImg from '../cappuccino.jpeg';
-import espressoImg from '../espresso.jpeg';
-import caramelMacchiatoImg from '../caramel-macchiato.jpeg';
+import '../css/CoffeeSection.css';
+import cappuccinoImg from '../../cappuccino.jpeg';
+import espressoImg from '../../espresso.jpeg';
+import caramelMacchiatoImg from '../../caramel-macchiato.jpeg';
 
 const coffeeItems = [
   {

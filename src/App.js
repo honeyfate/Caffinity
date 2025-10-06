@@ -1,13 +1,13 @@
-// App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
-import CoffeeSection from './components/CoffeeSection';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
+import Dashboard from './components/js/Dashboard';
+import CoffeeSection from './components/js/CoffeeSection';
+import Login from './components/js/Login';
+import Register from './components/js/Register';
 import './App.css';
 import cafeHomeBg from './cafe-home-bg.jpeg';
 import { useNavigate } from 'react-router-dom';
+
 
 const Home = () => {
   const navigate = useNavigate();

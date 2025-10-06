@@ -1,6 +1,6 @@
 import React from 'react';
-import Dashboard from './components/Dashboard';
-import CoffeeSection from './components/CoffeeSection'; // Import CoffeeSection
+import Dashboard from './components/js/Dashboard';
+import CoffeeSection from './components/js/CoffeeSection';
 import './App.css';
 import cafeHomeBg from './cafe-home-bg.jpeg';
 
@@ -8,6 +8,7 @@ const App = () => {
   return (
     <div>
       <Dashboard />
+
       {/* Home Section */}
       <section
         id="home"
@@ -34,7 +35,7 @@ const App = () => {
       </section>
 
       {/* Coffee Section */}
-      <CoffeeSection /> {/* Replace the static coffee section with CoffeeSection */}
+      <CoffeeSection />
 
       {/* Desserts Section */}
       <section id="desserts" className="section">

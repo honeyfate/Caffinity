@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/Register.css';
-import caffinityLogo from '../../caffinity-logo.png';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -32,13 +31,30 @@ const Register = () => {
     }
   };
 
+  const handleBackToLogin = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-form-wrapper">
         <form className="auth-form" onSubmit={handleRegister}>
-          {/* MOVED LOGO SECTION INSIDE THE FORM */}
+          {/* Back button */}
+          <button 
+            type="button" 
+            className="back-button" 
+            onClick={handleBackToLogin}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
+
+          {/* Logo section */}
           <div className="logo-section">
-            <img src={caffinityLogo} alt="Caffinity Logo" className="logo-icon" />
+            <div className="logo-container">
+              <img src={require('../../caffinity-logo.png')} alt="Caffinity Logo" className="logo-icon" />
+            </div>
             <h1 className="app-title">CAFFINITY</h1>
             <p className="app-slogan">Join our coffee community today</p>
           </div>
@@ -111,10 +127,19 @@ const Register = () => {
           </div>
           
           <button type="submit" className="create-account-button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
             Create Account
           </button>
           
-          <a href="/login" className="login-link">Already have an account? Sign in</a>
+          <p className="login-text">
+            Already have an account?{' '}
+            <span className="sign-in-link" onClick={handleBackToLogin}>
+              Sign in
+            </span>
+          </p>
         </form>
       </div>
     </div>

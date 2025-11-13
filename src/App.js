@@ -6,12 +6,8 @@ import Login from './components/js/Login';
 import Register from './components/js/Register';
 import './App.css';
 import cafeHomeBg from './cafe-home-bg.jpeg';
-import { useNavigate } from 'react-router-dom';
-
 
 const Home = () => {
-  const navigate = useNavigate();
-
   return (
     <div>
       <Dashboard />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/Register.css';
+import axios from 'axios';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -17,17 +18,70 @@ const Register = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    if (form.firstName && form.lastName && form.email && form.phoneNumber && form.password && form.confirmPassword) {
-      if (form.password !== form.confirmPassword) {
-        alert('Passwords do not match!');
+
+    if (form.password !== form.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    const newCustomer = {
+      username: form.email,
+      password: form.password,
+      loginStatus: "OFFLINE",
+      firstName: form.firstName,
+      lastName: form.lastName
+    };
+
+    console.log('Attempting to register:', newCustomer);
+
+    try {
+      // First, test if the backend is reachable
+      try {
+        const testResponse = await axios.get('http://localhost:8080/api/customers/test');
+        console.log('Backend connection test:', testResponse.data);
+      } catch (testError) {
+        console.error('Backend connection failed:', testError);
+        alert('Cannot connect to server. Please make sure the backend is running on port 8080.');
         return;
       }
-      alert('Registration successful!');
-      navigate('/login');
-    } else {
-      alert('Please fill in all fields');
+
+      // If backend is reachable, proceed with registration
+      const response = await axios.post('http://localhost:8080/api/customers/register', newCustomer, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000 // 10 second timeout
+      });
+      
+      console.log('Registration response:', response);
+      
+      if (response.status === 200 || response.status === 201) {
+        alert('Registration successful!');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Full error object:', error);
+      
+      if (error.code === 'ECONNREFUSED') {
+        alert('Connection refused. Please ensure the Spring Boot server is running on port 8080.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        alert('Network error. Check your internet connection and ensure the server is running.');
+      } else if (error.response) {
+        // Server responded with error status
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        alert(`Registration failed: ${error.response.data?.message || error.response.statusText}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('No response received:', error.request);
+        alert('No response from server. The server might be down.');
+      } else {
+        // Something else happened
+        console.error('Error message:', error.message);
+        alert(`Registration failed: ${error.message}`);
+      }
     }
   };
 

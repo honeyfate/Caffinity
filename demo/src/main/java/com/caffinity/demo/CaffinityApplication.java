@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class CaffinityApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(CaffinityApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(CaffinityApplication.class, args);
+        System.out.println("Caffinity Application Started Successfully!");
+    }
 }

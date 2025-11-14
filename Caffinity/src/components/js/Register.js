@@ -31,7 +31,8 @@ const Register = () => {
       password: form.password,
       loginStatus: "OFFLINE",
       firstName: form.firstName,
-      lastName: form.lastName
+      lastName: form.lastName,
+      phoneNumber: form.phoneNumber
     };
 
     console.log('Attempting to register:', newCustomer);

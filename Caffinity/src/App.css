@@ -32,7 +32,6 @@ html, body {
 
 /* Home Section */
 .home-section {
-  
   height: 100vh;
   width: 100%;
   background-size: cover;
@@ -42,13 +41,16 @@ html, body {
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;        /* Center content vertically */
   align-items: center;
   position: relative;
-  padding-top: 100px;
+
+  padding-top: 10px;              /* Enough space for fixed header */
+  padding-bottom: 10px;           /* NEW: balance layout */
   overflow: hidden;
   color: white;
 }
+
 
 .home-section::before {
   content: "";

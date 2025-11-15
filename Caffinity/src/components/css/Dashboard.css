@@ -1,82 +1,196 @@
 .dashboard {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 100%;
   z-index: 1000;
   background-color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 12px 40px; /* Increased horizontal padding */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  white-space: nowrap; /* Prevents text from moving to the next line */
-  overflow-x: auto; /* Allows scrolling horizontally if too small */
+  white-space: nowrap;
+  overflow: hidden; /* Changed from auto to hidden to prevent scrolling */
+  height: 64px;
+  box-sizing: border-box;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
+  height: 100%;
+  padding-right: 12px;
+  margin-top: 15px;
 }
 
 .logo {
   height: 40px;
   margin-right: 10px;
+  display: block;
+  vertical-align: middle;
 }
 
 .brand-name {
   font-size: 1.5rem;
   font-weight: bold;
   color: #4a4a4a;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .navigation {
   display: flex;
-  gap: 100px;
+  gap: 60px; /* Reduced gap for better fit */
+  align-items:center;
+  height: 100%;
+  justify-content:space-evenly;
+  flex: 1; /* Take available space to center the navigation */
+  margin: 0 40px; /* Add margin to prevent touching edges */
 }
+
 
 /* Style for all navigation links including Login */
 .navigation a {
   text-decoration: none;
   font-size: 1rem;
   color: #4a4a4a;
-  padding: 8px 12px;
+  padding: 8px 16px; /* Slightly increased padding */
   border-radius: 6px;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   white-space: nowrap;
-  margin-top:8px; /* Align with cart icon */
+  position: relative;
+}
+
+/* Painted brush stroke highlight effect */
+.navigation a.active {
+  color: #8b4513;
+  font-weight: 600;
+  background: none;
+}
+
+.navigation a.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #8b4513 20%, 
+    #8b4513 80%, 
+    transparent 100%);
+  border-radius: 10px;
+  animation: brushStroke 0.5s ease-out;
+}
+
+.navigation a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 15%;
+  width: 70%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(139, 69, 19, 0.4) 30%, 
+    rgba(139, 69, 19, 0.4) 70%, 
+    transparent 100%);
+  border-radius: 10px;
+}
+
+@keyframes brushStroke {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
 }
 
 .navigation a:hover {
-  background-color: #8b4513; /* Coffee-like brown */
-  color: white; /* Highlight text */
+  background-color: #f5f5f5;
+  color: #8b4513;
 }
 
+/* Remove cart container styles */
 .cart-container {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-right: 50px;
+  display: none; /* Hide cart container */
 }
 
-.cart-icon {
-  height: 30px;
-  padding: 8px 12px; /* Adds clickable space */
+/* Make <Link> behave exactly like <a> inside navigation */
+.navigation .login-link {
+  text-decoration: none !important;
+  font-size: 1rem;
+  color: #4a4a4a;
+  padding: 8px 16px;
   border-radius: 6px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+
+  /* FIX ALIGNMENT */
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin-bottom: 12px;
 }
 
-.cart-icon:hover {
-  background-color: #8b4513; /* Coffee-like brown */
-  filter: brightness(1) invert(0);
+
+/* On hover - no underline, same effect as others */
+.navigation .login-link:hover {
+  background-color: #f5f5f5;
+  color: #8b4513;
+  text-decoration: none !important;
 }
 
-/* Remove the separate login-link class since we're using the same styling for all nav links */
-.login-link {
-  /* Inherits all styles from .navigation a */
+/* Active state (if on login page) */
+.navigation .login-link.active {
+  color: #8b4513;
+  font-weight: 600;
 }
 
-/* Hide the old button element */
-.nav-login-button {
-  display: none;
+/* Responsive design for smaller screens */
+@media (max-width: 1024px) {
+  .navigation {
+    gap: 40px;
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 12px 20px;
+  }
+  
+  .navigation {
+    gap: 20px;
+    margin: 0 10px;
+  }
+  
+  .navigation a {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navigation {
+    gap: 10px;
+  }
+  
+  .navigation a {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .brand-name {
+    font-size: 1.2rem;
+  }
 }

@@ -108,7 +108,7 @@ const Register = () => {
           {/* Logo section */}
           <div className="logo-section">
             <div className="logo-container">
-              <img src={require('../../caffinity-logo.png')} alt="Caffinity Logo" className="logo-icon" />
+              <img src={require('../../images/caffinity-logo.png')} alt="Caffinity Logo" className="logo-icon" />
             </div>
             <h1 className="app-title">CAFFINITY</h1>
             <p className="app-slogan">Join our coffee community today</p>

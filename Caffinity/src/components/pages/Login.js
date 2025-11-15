@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/Login.css';
-import caffinityLogo from '../../caffinity-logo.png';
+import caffinityLogo from '../../images/caffinity-logo.png';
 import axios from 'axios';
 
 const Login = () => {

@@ -1,66 +1,19 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './components/js/Dashboard';
-import CoffeeSection from './components/js/CoffeeSection';
-import Login from './components/js/Login';
-import Register from './components/js/Register';
+import Dashboard from './components/pages/Dashboard';
+import Login from './components/pages/Login';
+import Register from './components/pages/Register';
+import Landing from './components/pages/Landing';
 import './App.css';
-import cafeHomeBg from './cafe-home-bg.jpeg';
-
-const Home = () => {
-  return (
-    <div>
-      <Dashboard />
-      {/* Home Section */}
-      <section
-        id="home"
-        className="section home-section"
-        style={{ backgroundImage: `url(${cafeHomeBg})` }}
-      >
-        <div className="home-content">
-          <h1>
-            WELCOME TO <span className="caffinity-highlight">CAFFINITY</span>
-          </h1>
-          <p>
-            Where every cup tells a story. Experience the perfect blend of artisanal coffee
-            and handcrafted desserts in a warm, welcoming atmosphere.
-          </p>
-          <div className="home-buttons">
-            <a href="#coffee" className="button coffee-button">
-              Explore our coffee
-            </a>
-            <a href="#desserts" className="button desserts-button">
-              View desserts
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Coffee Section */}
-      <CoffeeSection />
-
-      {/* Desserts Section */}
-      <section id="desserts" className="section">
-        <h1>Desserts</h1>
-        <p>Indulge in our delicious desserts.</p>
-      </section>
-
-      {/* About Us Section */}
-      <section id="about-us" className="section">
-        <h1>About Us</h1>
-        <p>Learn more about Caffinity.</p>
-      </section>
-    </div>
-  );
-};
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // Add useNavigate
 import '../css/Dashboard.css';
 import logo from '../../images/caffinity-logo.png';
 
 const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
   const location = useLocation();
+  const navigate = useNavigate(); // Add this hook
 
   // Update active section based on scroll position
   useEffect(() => {
@@ -49,11 +50,17 @@ const Dashboard = () => {
   };
 
   const handleLogoClick = () => {
-    setActiveSection('home');
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    // If we're not on the home page, navigate to home
+    if (location.pathname !== '/') {
+      navigate('/');
+    } else {
+      // If already on home page, scroll to top
+      setActiveSection('home');
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
   };
 
   return (
@@ -64,13 +71,12 @@ const Dashboard = () => {
       </div>
       
       <nav className="navigation">
-        <a 
-          href="#home" 
-          onClick={(e) => handleNavClick(e, 'home')}
+        <Link 
+          to="/"
           className={activeSection === 'home' ? 'active' : ''}
         >
           Home
-        </a>
+        </Link>
         <a 
           href="#coffee-showcase" 
           onClick={(e) => handleNavClick(e, 'coffee-showcase')}

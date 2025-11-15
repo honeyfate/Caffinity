@@ -9,6 +9,7 @@ const Login = () => {
   const [form, setForm] = useState({
     email: '',
     password: '',
+    role: 'customer' // Default role
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -16,9 +17,39 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleRoleChange = (role) => {
+    setForm({ ...form, role });
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     
+     // Add fade-out class to all elements
+    document.querySelector('.auth-container').classList.add('fade-out');
+    document.querySelector('.auth-form-wrapper').classList.add('fade-out');
+    document.querySelector('.logo-section').classList.add('fade-out');
+    document.querySelector('.logo-icon').classList.add('fade-out');
+    document.querySelector('.app-title').classList.add('fade-out');
+    document.querySelector('.app-slogan').classList.add('fade-out');
+    document.querySelector('.auth-form').classList.add('fade-out');
+    document.querySelector('.back-button').classList.add('fade-out');
+    document.querySelector('.register-text').classList.add('fade-out');
+    document.querySelector('.role-selection').classList.add('fade-out');
+    document.querySelector('.role-label').classList.add('fade-out');
+    document.querySelector('.role-options').classList.add('fade-out');
+    
+    // Add fade-out to form groups
+    const formGroups = document.querySelectorAll('.form-group');
+    formGroups.forEach(group => group.classList.add('fade-out'));
+    
+    // Add fade-out to login button
+    document.querySelector('.login-button').classList.add('fade-out');
+    
+    // Wait for transition to complete before submitting
+    setTimeout(() => {
+        // Your login logic here
+        console.log('Login submitted after fade animation');
+    }, 500); // Match this with your CSS transition duration
     if (!form.email || !form.password) {
       alert('Please fill in all fields');
       return;
@@ -27,16 +58,16 @@ const Login = () => {
     setIsLoading(true);
 
     const loginData = {
-      username: form.email, // Using email as username
+      username: form.email,
       password: form.password
     };
 
-    console.log('Attempting to login:', { username: form.email });
+    console.log('Attempting to login:', { username: form.email, role: form.role });
 
     try {
       // Test backend connection first
       try {
-        await axios.get('http://localhost:8080/api/customers/test');
+        await axios.get('http://localhost:8080/api/users/test');
       } catch (testError) {
         console.error('Backend connection failed:', testError);
         alert('Cannot connect to server. Please make sure the backend is running on port 8080.');
@@ -45,7 +76,7 @@ const Login = () => {
       }
 
       // Attempt login
-      const response = await axios.post('http://localhost:8080/api/customers/login', loginData, {
+      const response = await axios.post('http://localhost:8080/api/users/login', loginData, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -55,14 +86,33 @@ const Login = () => {
       console.log('Login response:', response);
       
       if (response.status === 200) {
-        const customerData = response.data.customer;
+        const userData = response.data.user;
         
-        // Store customer data in localStorage or context
-        localStorage.setItem('customer', JSON.stringify(customerData));
+        // Check if the selected role matches the user's actual role
+        if (form.role === 'admin' && userData.role !== 'ADMIN') {
+          alert('You do not have admin privileges. Please select Customer role.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (form.role === 'customer' && userData.role === 'ADMIN') {
+          alert('You are logging in as an admin account. Please select Admin role.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('isLoggedIn', 'true');
         
-        alert('Login successful! Welcome back, ' + customerData.firstName + '!');
-        navigate('/dashboard');
+        alert('Login successful! Welcome back, ' + userData.firstName + '!');
+        
+        // Redirect based on role
+        if (userData.role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -86,6 +136,7 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+    
   };
 
   const handleBackToHome = () => {
@@ -117,6 +168,31 @@ const Login = () => {
             <img src={caffinityLogo} alt="Caffinity Logo" className="logo-icon" />
             <h1 className="app-title">CAFFINITY</h1>
             <p className="app-slogan">Welcome back to our coffee community</p>
+          </div>
+
+          {/* Role Selection */}
+          <div className="form-group role-selection">
+            <label className="role-label">Login as:</label>
+            <div className="role-options">
+              <button
+                type="button"
+                className={`role-option ${form.role === 'customer' ? 'role-active' : ''}`}
+                onClick={() => handleRoleChange('customer')}
+                disabled={isLoading}
+              >
+                <div className="role-icon">👤</div>
+                <span>Customer</span>
+              </button>
+              <button
+                type="button"
+                className={`role-option ${form.role === 'admin' ? 'role-active' : ''}`}
+                onClick={() => handleRoleChange('admin')}
+                disabled={isLoading}
+              >
+                <div className="role-icon">👑</div>
+                <span>Admin</span>
+              </button>
+            </div>
           </div>
 
           <div className="form-group">

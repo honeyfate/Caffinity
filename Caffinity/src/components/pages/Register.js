@@ -26,21 +26,23 @@ const Register = () => {
       return;
     }
 
-    const newCustomer = {
+    const newUser = {
+      email: form.email,
       username: form.email,
       password: form.password,
       loginStatus: "OFFLINE",
       firstName: form.firstName,
       lastName: form.lastName,
-      phoneNumber: form.phoneNumber
+      phoneNumber: form.phoneNumber,
+      // Role is automatically set to CUSTOMER by backend
     };
 
-    console.log('Attempting to register:', newCustomer);
+    console.log('Attempting to register:', newUser);
 
     try {
       // First, test if the backend is reachable
       try {
-        const testResponse = await axios.get('http://localhost:8080/api/customers/test');
+        const testResponse = await axios.get('http://localhost:8080/api/users/test');
         console.log('Backend connection test:', testResponse.data);
       } catch (testError) {
         console.error('Backend connection failed:', testError);
@@ -49,7 +51,7 @@ const Register = () => {
       }
 
       // If backend is reachable, proceed with registration
-      const response = await axios.post('http://localhost:8080/api/customers/register', newCustomer, {
+      const response = await axios.post('http://localhost:8080/api/users/register', newUser, {
         headers: {
           'Content-Type': 'application/json',
         },

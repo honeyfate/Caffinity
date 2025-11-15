@@ -3,8 +3,8 @@ package com.caffinity.demo.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "customers")
-public class Customer {
+@Table(name = "users")
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,17 +30,23 @@ public class Customer {
     @Column(name = "login_status")
     private String loginStatus = "OFFLINE";
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.CUSTOMER;
+
     // Default constructor
-    public Customer() {}
+    public User() {}
 
     // Constructor with fields
-    public Customer(String username, String password, String firstName, String lastName, String email, String phoneNumber) {
+    public User(String username, String password, String firstName, String lastName, 
+                String email, String phoneNumber, UserRole role) {
         this.username = username;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.role = role;
     }
 
     // Getters and Setters
@@ -106,5 +112,13 @@ public class Customer {
 
     public void setLoginStatus(String loginStatus) {
         this.loginStatus = loginStatus;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 }

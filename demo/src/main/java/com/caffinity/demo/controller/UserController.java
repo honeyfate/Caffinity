@@ -15,16 +15,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.caffinity.demo.entity.Customer;
-import com.caffinity.demo.service.CustomerService;
+import com.caffinity.demo.entity.User;
+import com.caffinity.demo.entity.UserRole;
+import com.caffinity.demo.service.UserService;
 
 @RestController
-@RequestMapping("/api/customers")
-@CrossOrigin(origins = "http://localhost:3000") // Allow React app to connect
-public class CustomerController {
+@RequestMapping("/api/users")
+@CrossOrigin(origins = "http://localhost:3000")
+public class UserController {
 
     @Autowired
-    private CustomerService customerService;
+    private UserService userService;
 
     // Test endpoint to check if backend is running
     @GetMapping("/test")
@@ -32,21 +33,25 @@ public class CustomerController {
         return "Backend is working! Time: " + new java.util.Date();
     }
 
-    // Register a new customer
+    // Register a new user
     @PostMapping("/register")
-    public ResponseEntity<?> registerCustomer(@RequestBody Customer customer) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
             // Set email from username if not provided
-            if (customer.getEmail() == null || customer.getEmail().isEmpty()) {
-                customer.setEmail(customer.getUsername());
+            if (user.getEmail() == null || user.getEmail().isEmpty()) {
+                user.setEmail(user.getUsername());
             }
 
-            Customer savedCustomer = customerService.createCustomer(customer);
+            // Force role to be CUSTOMER for registration (admin accounts should be created differently)
+            user.setRole(UserRole.CUSTOMER);
+
+            User savedUser = userService.createUser(user);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Registration successful");
-            response.put("customerId", savedCustomer.getId());
-            response.put("username", savedCustomer.getUsername());
+            response.put("userId", savedUser.getId());
+            response.put("username", savedUser.getUsername());
+            response.put("role", savedUser.getRole());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
@@ -61,31 +66,31 @@ public class CustomerController {
         }
     }
 
-    // Get all customers
+    // Get all users
     @GetMapping
-    public ResponseEntity<?> getAllCustomers() {
+    public ResponseEntity<?> getAllUsers() {
         try {
-            return ResponseEntity.ok(customerService.getAllCustomers());
+            return ResponseEntity.ok(userService.getAllUsers());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving customers: " + e.getMessage());
+                    .body("Error retrieving users: " + e.getMessage());
         }
     }
 
-    // Get customer by ID
+    // Get user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> getCustomerById(@PathVariable Long id) {
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
-            Optional<Customer> customer = customerService.getCustomerById(id);
-            if (customer.isPresent()) {
-                return ResponseEntity.ok(customer.get());
+            Optional<User> user = userService.getUserById(id);
+            if (user.isPresent()) {
+                return ResponseEntity.ok(createUserResponse(user.get()));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Customer not found with id: " + id);
+                        .body("User not found with id: " + id);
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving customer: " + e.getMessage());
+                    .body("Error retrieving user: " + e.getMessage());
         }
     }
 
@@ -93,7 +98,7 @@ public class CustomerController {
     @GetMapping("/check-username/{username}")
     public ResponseEntity<?> checkUsernameExists(@PathVariable String username) {
         try {
-            boolean exists = customerService.existsByUsername(username);
+            boolean exists = userService.existsByUsername(username);
             Map<String, Boolean> response = new HashMap<>();
             response.put("exists", exists);
             return ResponseEntity.ok(response);
@@ -107,7 +112,7 @@ public class CustomerController {
     @GetMapping("/check-email/{email}")
     public ResponseEntity<?> checkEmailExists(@PathVariable String email) {
         try {
-            boolean exists = customerService.existsByEmail(email);
+            boolean exists = userService.existsByEmail(email);
             Map<String, Boolean> response = new HashMap<>();
             response.put("exists", exists);
             return ResponseEntity.ok(response);
@@ -119,7 +124,7 @@ public class CustomerController {
 
     // Login endpoint
     @PostMapping("/login")
-    public ResponseEntity<?> loginCustomer(@RequestBody Map<String, String> loginRequest) {
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
         try {
             String username = loginRequest.get("username");
             String password = loginRequest.get("password");
@@ -137,14 +142,14 @@ public class CustomerController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
 
-            // Authenticate customer
-            Customer authenticatedCustomer = customerService.authenticateCustomer(username, password);
+            // Authenticate user
+            User authenticatedUser = userService.authenticateUser(username, password);
 
-            if (authenticatedCustomer != null) {
+            if (authenticatedUser != null) {
                 // Create response without password
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Login successful");
-                response.put("customer", createCustomerResponse(authenticatedCustomer));
+                response.put("user", createUserResponse(authenticatedUser));
                 return ResponseEntity.ok(response);
             } else {
                 Map<String, String> errorResponse = new HashMap<>();
@@ -159,31 +164,32 @@ public class CustomerController {
         }
     }
 
-    // Helper method to create customer response without password
-    private Map<String, Object> createCustomerResponse(Customer customer) {
-        Map<String, Object> customerResponse = new HashMap<>();
-        customerResponse.put("id", customer.getId());
-        customerResponse.put("username", customer.getUsername());
-        customerResponse.put("firstName", customer.getFirstName());
-        customerResponse.put("lastName", customer.getLastName());
-        customerResponse.put("email", customer.getEmail());
-        customerResponse.put("phoneNumber", customer.getPhoneNumber());
-        customerResponse.put("loginStatus", customer.getLoginStatus());
-        return customerResponse;
+    // Helper method to create user response without password
+    private Map<String, Object> createUserResponse(User user) {
+        Map<String, Object> userResponse = new HashMap<>();
+        userResponse.put("id", user.getId());
+        userResponse.put("username", user.getUsername());
+        userResponse.put("firstName", user.getFirstName());
+        userResponse.put("lastName", user.getLastName());
+        userResponse.put("email", user.getEmail());
+        userResponse.put("phoneNumber", user.getPhoneNumber());
+        userResponse.put("loginStatus", user.getLoginStatus());
+        userResponse.put("role", user.getRole().toString());
+        return userResponse;
     }
 
     // Logout endpoint
     @PostMapping("/logout/{id}")
-    public ResponseEntity<?> logoutCustomer(@PathVariable Long id) {
+    public ResponseEntity<?> logoutUser(@PathVariable Long id) {
         try {
-            Customer loggedOutCustomer = customerService.logoutCustomer(id);
-            if (loggedOutCustomer != null) {
+            User loggedOutUser = userService.logoutUser(id);
+            if (loggedOutUser != null) {
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "Logout successful");
                 return ResponseEntity.ok(response);
             } else {
                 Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Customer not found");
+                errorResponse.put("error", "User not found");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
             }
         } catch (Exception e) {
@@ -193,20 +199,35 @@ public class CustomerController {
         }
     }
 
-    // Get customer by username (for testing)
+    // Get user by username
     @GetMapping("/username/{username}")
-    public ResponseEntity<?> getCustomerByUsername(@PathVariable String username) {
+    public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         try {
-            Optional<Customer> customer = customerService.getCustomerByUsername(username);
-            if (customer.isPresent()) {
-                return ResponseEntity.ok(createCustomerResponse(customer.get()));
+            Optional<User> user = userService.getUserByUsername(username);
+            if (user.isPresent()) {
+                return ResponseEntity.ok(createUserResponse(user.get()));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Customer not found with username: " + username);
+                        .body("User not found with username: " + username);
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving customer: " + e.getMessage());
+                    .body("Error retrieving user: " + e.getMessage());
+        }
+    }
+
+    // Get users by role
+    @GetMapping("/role/{role}")
+    public ResponseEntity<?> getUsersByRole(@PathVariable String role) {
+        try {
+            UserRole userRole = UserRole.valueOf(role.toUpperCase());
+            return ResponseEntity.ok(userService.getUsersByRole(userRole));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid role: " + role);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving users: " + e.getMessage());
         }
     }
 }

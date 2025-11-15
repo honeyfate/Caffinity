@@ -4,6 +4,8 @@ import Dashboard from './components/pages/Dashboard';
 import Login from './components/pages/Login';
 import Register from './components/pages/Register';
 import Landing from './components/pages/Landing';
+import AdminLayout from './components/admin/AdminLayout';
+import CustomerDashboard from './components/customer/CustomerDashboard'; // Add this import
 import './App.css';
 
 const App = () => {
@@ -13,7 +15,9 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} /> {/* Keep this if you have existing dashboard */}
+        <Route path="/customer" element={<CustomerDashboard />} /> {/* Add customer route */}
+        <Route path="/admin/*" element={<AdminLayout />} />
       </Routes>
     </Router>
   );

@@ -1,4 +1,4 @@
-.dashboard {
+.admin-dashboard {
   position: fixed;
   top: 0;
   left: 0;
@@ -14,12 +14,12 @@
   overflow: hidden;
   height: 70px;
   box-sizing: border-box;
-  animation: adminSlideDown 0.5s ease-out;
-  border-bottom: 2px solid rgb(53, 28, 28);
+  animation: adminSlideDown 0.1s ease-out;
+  border-bottom: 2px solid #8b4513;
 }
 
-/* Slide down animation for header */
-@keyframes slideDown {
+/* Slide down animation for admin header */
+@keyframes adminSlideDown {
   from {
     transform: translateY(-100%);
     opacity: 0;
@@ -30,7 +30,7 @@
   }
 }
 
-.logo-container {
+.admin-logo-container {
   display: flex;
   align-items: center;
   height: 100%;
@@ -40,11 +40,11 @@
   position: relative;
 }
 
-.logo-container:hover {
+.admin-logo-container:hover {
   transform: scale(1.05);
 }
 
-.logo {
+.admin-logo {
   height: 45px;
   margin-right: 12px;
   display: block;
@@ -52,7 +52,7 @@
   filter: brightness(0) invert(1);
 }
 
-.brand-name {
+.admin-brand-name {
   font-size: 1.6rem;
   font-weight: bold;
   color: #ffffff;
@@ -62,7 +62,7 @@
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.user-badge {
+.admin-badge {
   background: linear-gradient(135deg, #8b4513, #d2691e);
   color: white;
   padding: 2px 8px;
@@ -88,7 +88,7 @@
   }
 }
 
-.navigation {
+.admin-navigation {
   display: flex;
   gap: 50px;
   align-items: center;
@@ -98,14 +98,14 @@
   margin: 0 40px;
 }
 
-/* Style for all navigation links */
-.navigation a {
+/* Style for all admin navigation links */
+.admin-navigation a {
   text-decoration: none;
   font-size: 1rem;
   color: #e8d5b5;
   padding: 10px 20px;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
   white-space: nowrap;
   position: relative;
@@ -113,14 +113,14 @@
   animation: adminFadeInUp 0.6s ease-out;
 }
 
-/* Staggered animation for nav items */
-.navigation a:nth-child(1) { animation-delay: 0.1s; }
-.navigation a:nth-child(2) { animation-delay: 0.2s; }
-.navigation a:nth-child(3) { animation-delay: 0.3s; }
-.navigation a:nth-child(4) { animation-delay: 0.4s; }
-.navigation a:nth-child(5) { animation-delay: 0.5s; }
+/* Staggered animation for admin nav items */
+.admin-navigation a:nth-child(1) { animation-delay: 0.1s; }
+.admin-navigation a:nth-child(2) { animation-delay: 0.2s; }
+.admin-navigation a:nth-child(3) { animation-delay: 0.3s; }
+.admin-navigation a:nth-child(4) { animation-delay: 0.4s; }
+.admin-navigation a:nth-child(5) { animation-delay: 0.5s; }
 
-@keyframes fadeInUp {
+@keyframes adminFadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -131,14 +131,14 @@
   }
 }
 
-/* Enhanced brush stroke highlight effect */
-.navigation a.active {
+/* Enhanced brush stroke highlight effect for admin */
+.admin-navigation a.admin-active {
   color: #ffd700;
   font-weight: 600;
   background: rgba(255, 215, 0, 0.1);
 }
 
-.navigation a.active::before {
+.admin-navigation a.admin-active::before {
   content: '';
   position: absolute;
   bottom: -2px;
@@ -154,7 +154,7 @@
   animation: adminBrushStroke 0.5s ease-out;
 }
 
-.navigation a.active::after {
+.admin-navigation a.admin-active::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -169,7 +169,7 @@
   border-radius: 10px;
 }
 
-@keyframes brushStroke {
+@keyframes adminBrushStroke {
   0% {
     transform: scaleX(0);
     opacity: 0;
@@ -180,23 +180,23 @@
   }
 }
 
-.navigation a:hover {
-  background-color: rgba(139, 69, 19, 0.05);
+.admin-navigation a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   color: #ffd700;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* User actions section */
-.user-actions {
+/* Admin actions section */
+.admin-actions {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.user-login-btn {
-  background: linear-gradient(135deg, #2c1a0a 0%, #4a2c1a 100%);
-  color: #e8d5b5;
+.admin-logout-btn {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
   border: none;
   padding: 8px 20px;
   border-radius: 6px;
@@ -205,169 +205,82 @@
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  text-decoration: none;
-  display: inline-block;
 }
 
-.user-login-btn:hover {
+.admin-logout-btn:hover {
   background: linear-gradient(135deg, #a0522d, #8b4513);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
-  color: white;
-  text-decoration: none;
 }
 
-/* Make <Link> behave exactly like <a> inside navigation */
-/* Login link styled exactly like other navigation links */
-.navigation .login-link {
-  text-decoration: none !important;
-  font-size: 1rem;
-  color: #e8d5b5; /* same as other links */
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  white-space: nowrap;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  font-weight: 500;
-  animation: adminFadeInUp 0.6s ease-out; /* same animation */
-  margin-top: -1px;
-}
-
-/* Hover effect – same gold hover & lift */
-.navigation .login-link:hover {
-  background-color: rgba(139, 69, 19, 0.05);
-  color: #ffd700; /* gold hover color */
-  transform: translateY(-2px);
-  text-decoration: none !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Active state – gold color + gold underline stroke */
-.navigation .login-link.active {
-  color: #ffd700;
-  font-weight: 600;
-  background: rgba(255, 215, 0, 0.1);
-}
-
-.navigation .login-link.active::before {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 10%;
-  width: 80%;
-  height: 3px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    #ffd700 20%, 
-    #ffd700 80%, 
-    transparent 100%);
-  border-radius: 10px;
-  animation: adminBrushStroke 0.5s ease-out;
-}
-
-.navigation .login-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 15%;
-  width: 70%;
-  height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(255, 215, 0, 0.4) 30%, 
-    rgba(255, 215, 0, 0.4) 70%, 
-    transparent 100%);
-  border-radius: 10px;
-}
-
-
-/* Remove cart container styles */
-.cart-container {
-  display: none;
-}
-
-/* Responsive design for dashboard */
+/* Responsive design for admin dashboard */
 @media (max-width: 1200px) {
-  .navigation {
+  .admin-navigation {
     gap: 35px;
     margin: 0 25px;
   }
 }
 
 @media (max-width: 1024px) {
-  .dashboard {
+  .admin-dashboard {
     padding: 12px 25px;
   }
   
-  .navigation {
+  .admin-navigation {
     gap: 25px;
     margin: 0 15px;
   }
   
-  .navigation a {
-    padding: 8px 16px;
-    font-size: 0.95rem;
-  }
-  
-  .navigation .login-link {
+  .admin-navigation a {
     padding: 8px 16px;
     font-size: 0.95rem;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard {
+  .admin-dashboard {
     padding: 12px 15px;
     height: 60px;
   }
   
-  .navigation {
+  .admin-navigation {
     gap: 15px;
     margin: 0 10px;
   }
   
-  .navigation a {
+  .admin-navigation a {
     padding: 6px 12px;
     font-size: 0.85rem;
   }
   
-  .navigation .login-link {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-  }
-  
-  .brand-name {
+  .admin-brand-name {
     font-size: 1.3rem;
   }
   
-  .logo {
+  .admin-logo {
     height: 35px;
   }
   
-  .user-login-btn {
+  .admin-logout-btn {
     padding: 6px 15px;
     font-size: 0.8rem;
   }
 }
 
 @media (max-width: 640px) {
-  .dashboard {
+  .admin-dashboard {
     flex-wrap: wrap;
     height: auto;
     min-height: 70px;
     padding: 8px 15px;
   }
   
-  .logo-container {
+  .admin-logo-container {
     margin-top: 5px;
     margin-bottom: 5px;
   }
   
-  .navigation {
+  .admin-navigation {
     order: 3;
     width: 100%;
     margin: 5px 0;
@@ -375,41 +288,31 @@
     justify-content: center;
   }
   
-  .navigation a {
+  .admin-navigation a {
     padding: 4px 8px;
     font-size: 0.8rem;
   }
   
-  .navigation .login-link {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-  }
-  
-  .user-actions {
+  .admin-actions {
     margin-left: auto;
   }
 }
 
 @media (max-width: 480px) {
-  .navigation {
+  .admin-navigation {
     gap: 5px;
   }
   
-  .navigation a {
+  .admin-navigation a {
     padding: 3px 6px;
     font-size: 0.75rem;
   }
   
-  .navigation .login-link {
-    padding: 3px 6px;
-    font-size: 0.75rem;
-  }
-  
-  .brand-name {
+  .admin-brand-name {
     font-size: 1.1rem;
   }
   
-  .user-badge {
+  .admin-badge {
     font-size: 0.6rem;
     padding: 1px 6px;
   }

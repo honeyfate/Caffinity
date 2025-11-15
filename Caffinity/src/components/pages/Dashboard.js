@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom'; // Add useNavigate
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../css/Dashboard.css';
 import logo from '../../images/caffinity-logo.png';
 
 const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
   const location = useLocation();
-  const navigate = useNavigate(); // Add this hook
+  const navigate = useNavigate();
 
   // Update active section based on scroll position
   useEffect(() => {
@@ -49,13 +49,42 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogoClick = () => {
-    // If we're not on the home page, navigate to home
+  const handleHomeClick = (e) => {
+    e.preventDefault();
+    setActiveSection('home');
+    
+    // If we're not on the home page, navigate to home first
     if (location.pathname !== '/') {
       navigate('/');
+      // Scroll to top after navigation
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 100);
     } else {
-      // If already on home page, scroll to top
-      setActiveSection('home');
+      // If already on home page, scroll to the welcome section (top)
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleLogoClick = () => {
+    // Same behavior as home click
+    setActiveSection('home');
+    
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 100);
+    } else {
       window.scrollTo({
         top: 0,
         behavior: 'smooth'
@@ -71,12 +100,13 @@ const Dashboard = () => {
       </div>
       
       <nav className="navigation">
-        <Link 
-          to="/"
+        <a 
+          href="#home"
+          onClick={handleHomeClick}
           className={activeSection === 'home' ? 'active' : ''}
         >
           Home
-        </Link>
+        </a>
         <a 
           href="#coffee-showcase" 
           onClick={(e) => handleNavClick(e, 'coffee-showcase')}

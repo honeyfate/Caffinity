@@ -111,7 +111,7 @@ const Login = () => {
         if (userData.role === 'ADMIN') {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate('/customer');
         }
       }
     } catch (error) {

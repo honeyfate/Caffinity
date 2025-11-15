@@ -1,0 +1,387 @@
+.customer-dashboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: linear-gradient(135deg, #2c1a0a 0%, #4a2c1a 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 40px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  height: 70px;
+  box-sizing: border-box;
+  animation: customerSlideDown 0.1s ease-out;
+  border-bottom: 2px solid #8b4513;
+}
+
+/* Slide down animation for customer header */
+@keyframes customerSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.customer-logo-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-right: 20px;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.customer-logo-container:hover {
+  transform: scale(1.05);
+}
+
+.customer-logo {
+  height: 45px;
+  margin-right: 12px;
+  display: block;
+  vertical-align: middle;
+  filter: brightness(0) invert(1);
+}
+
+.customer-brand-name {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #ffffff;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.customer-navigation {
+  display: flex;
+  gap: 50px;
+  align-items: center;
+  height: 100%;
+  justify-content: center;
+  flex: 1;
+  margin: 0 40px;
+}
+
+/* Style for all customer navigation links */
+.customer-navigation a {
+  text-decoration: none;
+  font-size: 1rem;
+  color: #e8d5b5;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  font-weight: 500;
+  animation: customerFadeInUp 0.6s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Staggered animation for customer nav items */
+.customer-navigation a:nth-child(1) { animation-delay: 0.1s; }
+.customer-navigation a:nth-child(2) { animation-delay: 0.2s; }
+.customer-navigation a:nth-child(3) { animation-delay: 0.3s; }
+.customer-navigation a:nth-child(4) { animation-delay: 0.4s; }
+.customer-navigation a:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes customerFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced brush stroke highlight effect for customer */
+.customer-navigation a.customer-active {
+  color: #ffd700;
+  font-weight: 600;
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.customer-navigation a.customer-active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #ffd700 20%, 
+    #ffd700 80%, 
+    transparent 100%);
+  border-radius: 10px;
+  animation: customerBrushStroke 0.5s ease-out;
+}
+
+.customer-navigation a.customer-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 15%;
+  width: 70%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 215, 0, 0.4) 30%, 
+    rgba(255, 215, 0, 0.4) 70%, 
+    transparent 100%);
+  border-radius: 10px;
+}
+
+@keyframes customerBrushStroke {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.customer-navigation a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Profile icon styles */
+.profile-icon {
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.customer-navigation a:hover .profile-icon {
+  transform: scale(1.1);
+}
+
+.customer-navigation a.customer-active .profile-icon {
+  color: #ffd700;
+}
+
+/* Make sure Link components behave like anchor tags */
+.customer-navigation .customer-active {
+  text-decoration: none !important;
+}
+
+/* Responsive design for customer dashboard */
+@media (max-width: 1200px) {
+  .customer-navigation {
+    gap: 35px;
+    margin: 0 25px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .customer-dashboard {
+    padding: 12px 25px;
+  }
+  
+  .customer-navigation {
+    gap: 25px;
+    margin: 0 15px;
+  }
+  
+  .customer-navigation a {
+    padding: 8px 16px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .customer-dashboard {
+    padding: 12px 15px;
+    height: 60px;
+  }
+  
+  .customer-navigation {
+    gap: 15px;
+    margin: 0 10px;
+  }
+  
+  .customer-navigation a {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    gap: 4px;
+  }
+  
+  .customer-brand-name {
+    font-size: 1.3rem;
+  }
+  
+  .customer-logo {
+    height: 35px;
+  }
+  
+  .profile-icon {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .customer-dashboard {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 70px;
+    padding: 8px 15px;
+  }
+  
+  .customer-logo-container {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .customer-navigation {
+    order: 3;
+    width: 100%;
+    margin: 5px 0;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .customer-navigation a {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    gap: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .customer-navigation {
+    gap: 5px;
+  }
+  
+  .customer-navigation a {
+    padding: 3px 6px;
+    font-size: 0.75rem;
+    gap: 2px;
+  }
+  
+  .customer-brand-name {
+    font-size: 1.1rem;
+  }
+  
+  .profile-icon {
+    font-size: 0.9rem;
+  }
+}
+
+.customer-dashboard-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.customer-main-content {
+  padding-top: 70px; /* Height of the fixed header */
+  min-height: calc(100vh - 70px);
+}
+
+.dashboard-section {
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-section h2 {
+  color: #2c1a0a;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.welcome-banner {
+  text-align: center;
+  color: #2c1a0a;
+}
+
+.welcome-banner h1 {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.welcome-banner p {
+  font-size: 1.2rem;
+  color: #4a2c1a;
+}
+
+/* Add logout button styles */
+.customer-logout-btn {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  margin-left: 20px;
+}
+
+.customer-logout-btn:hover {
+  background: linear-gradient(135deg, #a0522d, #8b4513);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
+}
+
+/* Coffee and dessert grid placeholders */
+.coffee-grid, .desserts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 20px;
+}
+
+.coffee-grid::before, .desserts-grid::before {
+  content: "Coffee items coming soon...";
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+.desserts-grid::before {
+  content: "Dessert items coming soon...";
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .welcome-banner h1 {
+    font-size: 2rem;
+  }
+  
+  .dashboard-section h2 {
+    font-size: 2rem;
+  }
+  
+  .customer-logout-btn {
+    margin-left: 10px;
+    padding: 6px 15px;
+    font-size: 0.8rem;
+  }
+}

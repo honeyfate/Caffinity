@@ -11,6 +11,8 @@ import caramelMacchiatoImg from '../../images/caramel-macchiato.jpeg';
 import latteImg from '../../images/latte.jpeg';
 import mochaImg from '../../images/mocha.jpeg';
 import coldBrewImg from '../../images/cold-brew.jpeg';
+import americanoImg from '../../images/americano.jpg';
+import flatWhiteImg from '../../images/flat-white.jpg';
 
 // Dessert images
 import tiramisuImg from '../../images/tiramisu.jpeg';
@@ -19,6 +21,8 @@ import chocolateCakeImg from '../../images/chocolate-cake.jpeg';
 import croissantImg from '../../images/croissant.jpeg';
 import macaronsImg from '../../images/macarons.jpeg';
 import brownieImg from '../../images/brownie.jpeg';
+import cremeBruleeImg from '../../images/creme-brulee.jpg';
+import redVelvetImg from '../../images/red-velvet.jpg';
 
 // About us image
 import coffeeShopImg from '../../images/coffee-shop.jpeg';
@@ -30,6 +34,8 @@ const coffeeItems = [
   { id: 4, name: 'Latte', description: 'Smooth espresso with steamed milk and a light foam layer', price: '₱130.00', image: latteImg, type: 'Hot Coffee' },
   { id: 5, name: 'Mocha', description: 'Chocolate-flavored espresso drink topped with whipped cream', price: '₱150.00', image: mochaImg, type: 'Hot Coffee' },
   { id: 6, name: 'Cold Brew', description: 'Slow-steeped coffee served chilled for a bold and smooth flavor', price: '₱160.00', image: coldBrewImg, type: 'Iced Coffee' },
+  { id: 7, name: 'Americano', description: 'Rich espresso shots topped with hot water for a smooth, bold flavor', price: '₱110.00', image: americanoImg, type: 'Hot Coffee' },
+  { id: 8, name: 'Flat White', description: 'Velvety smooth coffee with microfoam and double ristretto shots', price: '₱140.00', image: flatWhiteImg, type: 'Hot Coffee' }
 ];
 
 const dessertItems = [
@@ -39,6 +45,8 @@ const dessertItems = [
   { id: 4, name: 'Butter Croissant', description: 'Flaky, buttery French croissant perfect with any coffee', price: '₱95.00', image: croissantImg, type: 'Pastry' },
   { id: 5, name: 'French Macarons', description: 'Assorted flavors of delicate almond meringue cookies', price: '₱220.00', image: macaronsImg, type: 'Cookies' },
   { id: 6, name: 'Walnut Brownie', description: 'Rich chocolate brownie with walnuts, served warm', price: '₱120.00', image: brownieImg, type: 'Brownie' },
+  { id: 7, name: 'Crème Brûlée', description: 'Classic French dessert with rich custard base and caramelized sugar top', price: '₱165.00', image: cremeBruleeImg, type: 'French Dessert' },
+  { id: 8, name: 'Red Velvet Cake', description: 'Moist red velvet layers with cream cheese frosting and red velvet crumbs', price: '₱175.00', image: redVelvetImg, type: 'Cake' }
 ];
 
 const Landing = () => {

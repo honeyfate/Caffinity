@@ -1,22 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import '../css/CustomerCoffee.css';
 
 const CustomerCoffee = () => {
   const [cart, setCart] = useState([]);
+  const [coffeeItems, setCoffeeItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const coffeeItems = [
-    { id: 1, name: 'Cappuccino', description: 'Rich espresso with steamed milk foam and a touch of cinnamon', price: '₱125.00', image: '/images/cappuccino.jpeg', type: 'Hot Coffee' },
-    { id: 2, name: 'Espresso', description: 'Pure Italian espresso shot with perfect crema', price: '₱90.00', image: '/images/espresso.jpeg', type: 'Hot Coffee' },
-    { id: 3, name: 'Iced Caramel Macchiato', description: 'Espresso with vanilla-flavored syrup, milk, and caramel drizzle over ice', price: '₱170.00', image: '/images/caramel-macchiato.jpeg', type: 'Iced Coffee' },
-    { id: 4, name: 'Latte', description: 'Smooth espresso with steamed milk and a light foam layer', price: '₱130.00', image: '/images/latte.jpeg', type: 'Hot Coffee' },
-    { id: 5, name: 'Mocha', description: 'Chocolate-flavored espresso drink topped with whipped cream', price: '₱150.00', image: '/images/mocha.jpeg', type: 'Hot Coffee' },
-    { id: 6, name: 'Cold Brew', description: 'Slow-steeped coffee served chilled for a bold and smooth flavor', price: '₱160.00', image: '/images/cold-brew.jpeg', type: 'Iced Coffee' },
-  ];
+  // Fetch coffee products from backend
+  const fetchCoffeeProducts = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/products/coffee');
+      setCoffeeItems(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching coffee products:', error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoffeeProducts();
+  }, []);
 
   const addToCart = (item) => {
     setCart([...cart, { ...item, quantity: 1 }]);
     alert(`${item.name} added to cart!`);
   };
+
+  // Format price to Philippine Peso format
+  const formatPrice = (price) => {
+    return `₱${parseFloat(price).toFixed(2)}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="customer-coffee">
+        <div className="page-header">
+          <h1>Our Coffee Selection</h1>
+          <p>Loading coffee products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="customer-coffee">
@@ -26,27 +52,41 @@ const CustomerCoffee = () => {
       </div>
 
       <div className="items-grid">
-        {coffeeItems.map(item => (
-          <div key={item.id} className="item-card">
-            <div className="card-image-container">
-              <img src={item.image} alt={item.name} className="item-image" />
-              <div className="item-type-badge">{item.type}</div>
-            </div>
-            <div className="card-content">
-              <h3 className="item-name">{item.name}</h3>
-              <p className="item-description">{item.description}</p>
-              <div className="card-footer">
-                <span className="item-price">{item.price}</span>
-                <button 
-                  className="add-to-cart-btn"
-                  onClick={() => addToCart(item)}
-                >
-                  Add to Cart
-                </button>
+        {coffeeItems.length === 0 ? (
+          <div className="no-products">
+            <p>No coffee products available yet. Check back soon!</p>
+          </div>
+        ) : (
+          coffeeItems.map(item => (
+            <div key={item.id} className="item-card">
+              <div className="card-image-container">
+                {item.imageUrl ? (
+                  <img 
+                    src={`http://localhost:8080${item.imageUrl}`} 
+                    alt={item.name} 
+                    className="item-image" 
+                  />
+                ) : (
+                  <div className="image-placeholder">No Image</div>
+                )}
+                <div className="item-type-badge">{item.category}</div>
+              </div>
+              <div className="card-content">
+                <h3 className="item-name">{item.name}</h3>
+                <p className="item-description">{item.description}</p>
+                <div className="card-footer">
+                  <span className="item-price">{formatPrice(item.price)}</span>
+                  <button 
+                    className="add-to-cart-btn"
+                    onClick={() => addToCart(item)}
+                  >
+                    Add to Cart
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <div className="cart-summary">
@@ -60,7 +100,7 @@ const CustomerCoffee = () => {
               {cart.map((item, index) => (
                 <div key={index} className="cart-item">
                   <span>{item.name}</span>
-                  <span>{item.price}</span>
+                  <span>{formatPrice(item.price)}</span>
                 </div>
               ))}
             </div>

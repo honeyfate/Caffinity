@@ -14,8 +14,8 @@
   overflow: hidden;
   height: 70px;
   box-sizing: border-box;
-  animation: adminSlideDown 0.5s ease-out;
-  border-bottom: 2px solid rgb(53, 28, 28);
+  animation: adminSlideDown 0.1s ease-out;
+  border-bottom: 2px solid #8b4513;
 }
 
 .customer-logo-container {

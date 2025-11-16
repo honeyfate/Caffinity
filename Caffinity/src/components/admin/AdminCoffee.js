@@ -7,6 +7,7 @@ const AdminCoffee = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -20,11 +21,24 @@ const AdminCoffee = () => {
   // Fetch coffee products from backend
   const fetchCoffeeProducts = async () => {
     try {
+      console.log('Fetching coffee products...');
       const response = await axios.get('http://localhost:8080/api/products/coffee');
-      setCoffeeProducts(response.data);
+      console.log('Products fetched:', response.data);
+      
+      // Ensure we have proper image URLs
+      const productsWithImages = response.data.map(product => ({
+        ...product,
+        imageUrl: product.imageUrl || getPlaceholderImage(product.name)
+      }));
+      setCoffeeProducts(productsWithImages);
     } catch (error) {
       console.error('Error fetching coffee products:', error);
     }
+  };
+
+  // Helper function for placeholder images
+  const getPlaceholderImage = (productName) => {
+    return `https://via.placeholder.com/300x200/8B4513/ffffff?text=${encodeURIComponent(productName)}`;
   };
 
   useEffect(() => {
@@ -61,6 +75,7 @@ const AdminCoffee = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
     // Create FormData for file upload
     const submitData = new FormData();
@@ -75,29 +90,39 @@ const AdminCoffee = () => {
     }
 
     try {
+      console.log('Submitting form data...');
+      let response;
       if (editingProduct) {
         // Update existing product
-        await axios.put(`http://localhost:8080/api/products/${editingProduct.id}`, submitData, {
+        response = await axios.put(`http://localhost:8080/api/products/${editingProduct.id}`, submitData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
       } else {
         // Add new product
-        await axios.post('http://localhost:8080/api/products', submitData, {
+        response = await axios.post('http://localhost:8080/api/products', submitData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
       }
       
+      console.log('Product saved successfully:', response.data);
+      
       // Reset form and refresh products
       resetForm();
-      fetchCoffeeProducts();
+      
+      // Force refresh the products list
+      await fetchCoffeeProducts();
+      
       alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!');
     } catch (error) {
       console.error('Error saving product:', error);
+      console.error('Error details:', error.response?.data);
       alert('Error saving product. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,13 +159,27 @@ const AdminCoffee = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await axios.delete(`http://localhost:8080/api/products/${productId}`);
-        fetchCoffeeProducts();
+        setCoffeeProducts(prev => prev.filter(product => product.id !== productId));
         alert('Product deleted successfully!');
       } catch (error) {
         console.error('Error deleting product:', error);
         alert('Error deleting product. Please try again.');
       }
     }
+  };
+
+  // Get image source for product
+  const getProductImage = (product) => {
+    if (product.imageUrl) {
+      // If it's already a full URL, use it directly
+      if (product.imageUrl.startsWith('http')) {
+        return product.imageUrl;
+      }
+      // If it's a relative path, make it absolute
+      return `http://localhost:8080${product.imageUrl}`;
+    }
+    // Fallback to placeholder if no image URL
+    return getPlaceholderImage(product.name);
   };
 
   return (
@@ -150,8 +189,9 @@ const AdminCoffee = () => {
         <button 
           className="add-product-btn"
           onClick={() => setShowAddForm(true)}
+          disabled={isLoading}
         >
-          + Add Coffee Product
+          {isLoading ? 'Loading...' : '+ Add Coffee Product'}
         </button>
       </div>
 
@@ -161,13 +201,13 @@ const AdminCoffee = () => {
           <div className="product-form">
             <div className="form-header">
               <h2>{editingProduct ? 'Edit Coffee Product' : 'Add New Coffee Product'}</h2>
-              <button className="close-btn" onClick={resetForm}>×</button>
+              <button className="close-btn" onClick={resetForm} disabled={isLoading}>×</button>
             </div>
             
             <form onSubmit={handleSubmit}>
               {/* Image Upload Section */}
               <div className="form-group">
-                <label>Product Image</label>
+                <label className="form-label">Product Image</label>
                 <div className="image-upload-container">
                   {imagePreview ? (
                     <div className="image-preview">
@@ -176,6 +216,7 @@ const AdminCoffee = () => {
                         type="button" 
                         className="change-image-btn"
                         onClick={() => document.getElementById('imageUpload').click()}
+                        disabled={isLoading}
                       >
                         Change Image
                       </button>
@@ -196,37 +237,42 @@ const AdminCoffee = () => {
                     accept="image/*"
                     onChange={handleImageChange}
                     style={{ display: 'none' }}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Product Name *</label>
+                <label className="form-label">Product Name *</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="e.g., Cappuccino, Latte, etc."
+                  className="form-input"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div className="form-group">
-                <label>Description *</label>
+                <label className="form-label">Description *</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   placeholder="Describe the coffee product..."
                   rows="3"
+                  className="form-textarea"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>Price (₱) *</label>
+                <div className="form-group price-group">
+                  <label className="form-label">Price (₱) *</label>
                   <input
                     type="number"
                     name="price"
@@ -235,17 +281,21 @@ const AdminCoffee = () => {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
+                    className="form-input"
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Category *</label>
+                <div className="form-group category-group">
+                  <label className="form-label">Category *</label>
                   <select
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
+                    className="form-select"
                     required
+                    disabled={isLoading}
                   >
                     <option value="Hot Coffee">Hot Coffee</option>
                     <option value="Iced Coffee">Iced Coffee</option>
@@ -256,11 +306,20 @@ const AdminCoffee = () => {
               </div>
 
               <div className="form-actions">
-                <button type="button" className="cancel-btn" onClick={resetForm}>
+                <button 
+                  type="button" 
+                  className="cancel-btn" 
+                  onClick={resetForm}
+                  disabled={isLoading}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="save-btn">
-                  {editingProduct ? 'Update Product' : 'Add Product'}
+                <button 
+                  type="submit" 
+                  className="save-btn"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add Product')}
                 </button>
               </div>
             </form>
@@ -278,32 +337,44 @@ const AdminCoffee = () => {
           coffeeProducts.map(product => (
             <div key={product.id} className="product-card">
               <div className="product-image">
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} />
-                ) : (
-                  <div className="image-placeholder">No Image</div>
-                )}
+                <img 
+                  src={getProductImage(product)} 
+                  alt={product.name}
+                  onError={(e) => {
+                    console.error('Image failed to load:', product.imageUrl);
+                    e.target.onerror = null;
+                    e.target.src = getPlaceholderImage(product.name);
+                  }}
+                />
                 <div className="product-category">{product.category}</div>
               </div>
               
               <div className="product-info">
-                <h3>{product.name}</h3>
-                <p className="product-description">{product.description}</p>
-                <div className="product-price">₱{product.price.toFixed(2)}</div>
-                
-                <div className="product-actions">
-                  <button 
-                    className="edit-btn"
-                    onClick={() => handleEdit(product)}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    className="delete-btn"
-                    onClick={() => handleDelete(product.id)}
-                  >
-                    Delete
-                  </button>
+                <div className="product-content">
+                  <div className="product-text-content">
+                    <h3>{product.name}</h3>
+                    <p className="product-description">{product.description}</p>
+                    <div className="product-price-container">
+                      <div className="product-price">₱{parseFloat(product.price).toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="product-actions">
+                    <button 
+                      className="edit-btn"
+                      onClick={() => handleEdit(product)}
+                      disabled={isLoading}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={isLoading}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../css/CustomerCart.css';
 
 const CustomerCart = () => {
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'Cappuccino', price: '₱125.00', quantity: 2 },
-    { id: 2, name: 'Tiramisu', price: '₱180.00', quantity: 1 },
-    { id: 3, name: 'Latte', price: '₱130.00', quantity: 1 }
-  ]);
+  const [cartItems, setCartItems] = useState([]);
+
+  // Load cart from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('coffeeCart');
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('coffeeCart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity === 0) {
@@ -25,11 +34,45 @@ const CustomerCart = () => {
     }, 0);
   };
 
+  const handleContinueShopping = () => {
+    window.location.href = '/customer-coffee'; // Adjust path to your coffee page
+  };
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      alert('Your cart is empty!');
+      return;
+    }
+    // Here you can implement your checkout logic
+    alert('Proceeding to checkout!');
+    // window.location.href = '/checkout';
+  };
+
   return (
     <div className="customer-cart">
       <div className="page-header">
         <h1>Shopping Cart</h1>
         <p>Review your items and proceed to checkout</p>
+      </div>
+
+      {/* Checkout Steps */}
+      <div className="checkout-steps">
+        <div className="checkout-step">
+          <div className="step-number active">1</div>
+          <div className="step-label active">Cart</div>
+        </div>
+        <div className="checkout-step">
+          <div className="step-number">2</div>
+          <div className="step-label">Information</div>
+        </div>
+        <div className="checkout-step">
+          <div className="step-number">3</div>
+          <div className="step-label">Payment</div>
+        </div>
+        <div className="checkout-step">
+          <div className="step-number">4</div>
+          <div className="step-label">Confirmation</div>
+        </div>
       </div>
 
       <div className="cart-content">
@@ -40,13 +83,24 @@ const CustomerCart = () => {
             </div>
             <div className="card-content">
               {cartItems.length === 0 ? (
-                <p>Your cart is empty</p>
+                <div className="empty-cart">
+                  <div className="empty-cart-icon">🛒</div>
+                  <h3>Your cart is empty</h3>
+                  <p>Add some delicious coffee items to get started!</p>
+                  <button 
+                    className="card-btn" 
+                    onClick={handleContinueShopping}
+                  >
+                    Browse Coffee Selection
+                  </button>
+                </div>
               ) : (
                 cartItems.map(item => (
                   <div key={item.id} className="cart-item-detail">
                     <div className="item-info">
                       <h4>{item.name}</h4>
                       <p>{item.price} each</p>
+                      {item.category && <small>Category: {item.category}</small>}
                     </div>
                     <div className="quantity-controls">
                       <button 
@@ -80,8 +134,12 @@ const CustomerCart = () => {
             </div>
             <div className="card-content">
               <div className="summary-row">
-                <span>Subtotal:</span>
+                <span>Items ({cartItems.reduce((total, item) => total + item.quantity, 0)}):</span>
                 <span>₱{getTotalPrice().toFixed(2)}</span>
+              </div>
+              <div className="summary-row">
+                <span>Shipping:</span>
+                <span>₱{cartItems.length > 0 ? '50.00' : '0.00'}</span>
               </div>
               <div className="summary-row">
                 <span>Tax:</span>
@@ -89,14 +147,21 @@ const CustomerCart = () => {
               </div>
               <div className="summary-row total">
                 <span>Total:</span>
-                <span>₱{(getTotalPrice() * 1.12).toFixed(2)}</span>
+                <span>₱{(getTotalPrice() * 1.12 + (cartItems.length > 0 ? 50 : 0)).toFixed(2)}</span>
               </div>
             </div>
             <div className="card-actions">
-              <button className="card-btn" disabled={cartItems.length === 0}>
+              <button 
+                className="card-btn" 
+                onClick={handleCheckout}
+                disabled={cartItems.length === 0}
+              >
                 Proceed to Checkout
               </button>
-              <button className="card-btn secondary">
+              <button 
+                className="card-btn secondary"
+                onClick={handleContinueShopping}
+              >
                 Continue Shopping
               </button>
             </div>

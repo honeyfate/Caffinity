@@ -14,20 +14,8 @@
   overflow: hidden;
   height: 70px;
   box-sizing: border-box;
-  animation: customerSlideDown 0.1s ease-out;
-  border-bottom: 2px solid #8b4513;
-}
-
-/* Slide down animation for customer header */
-@keyframes customerSlideDown {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  animation: adminSlideDown 0.5s ease-out;
+  border-bottom: 2px solid rgb(53, 28, 28);
 }
 
 .customer-logo-container {
@@ -84,28 +72,9 @@
   white-space: nowrap;
   position: relative;
   font-weight: 500;
-  animation: customerFadeInUp 0.6s ease-out;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* Staggered animation for customer nav items */
-.customer-navigation a:nth-child(1) { animation-delay: 0.1s; }
-.customer-navigation a:nth-child(2) { animation-delay: 0.2s; }
-.customer-navigation a:nth-child(3) { animation-delay: 0.3s; }
-.customer-navigation a:nth-child(4) { animation-delay: 0.4s; }
-.customer-navigation a:nth-child(5) { animation-delay: 0.5s; }
-
-@keyframes customerFadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Enhanced brush stroke highlight effect for customer */
@@ -128,7 +97,6 @@
     #ffd700 80%, 
     transparent 100%);
   border-radius: 10px;
-  animation: customerBrushStroke 0.5s ease-out;
 }
 
 .customer-navigation a.customer-active::after {
@@ -146,17 +114,6 @@
   border-radius: 10px;
 }
 
-@keyframes customerBrushStroke {
-  0% {
-    transform: scaleX(0);
-    opacity: 0;
-  }
-  100% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-}
-
 .customer-navigation a:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #ffd700;
@@ -164,20 +121,48 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Profile and Cart icon styles */
-.profile-icon, .cart-icon {
+/* Navigation icon styles */
+.nav-icon {
   font-size: 1.2rem;
   transition: all 0.3s ease;
 }
 
-.customer-navigation a:hover .profile-icon,
-.customer-navigation a:hover .cart-icon {
+.customer-navigation a:hover .nav-icon {
   transform: scale(1.1);
 }
 
-.customer-navigation a.customer-active .profile-icon,
-.customer-navigation a.customer-active .cart-icon {
+.customer-navigation a.customer-active .nav-icon {
   color: #ffd700;
+}
+
+/* Specific icon colors and effects */
+.customer-navigation a:hover .fa-home,
+.customer-navigation a.customer-active .fa-home {
+  color: #ffd700;
+}
+
+.customer-navigation a:hover .fa-coffee,
+.customer-navigation a.customer-active .fa-coffee {
+  color: #ffd700;
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.customer-navigation a:hover .fa-cookie-bite,
+.customer-navigation a.customer-active .fa-cookie-bite {
+  color: #ffd700;
+  transform: scale(1.1) rotate(5deg);
+}
+
+.customer-navigation a:hover .fa-shopping-cart,
+.customer-navigation a.customer-active .fa-shopping-cart {
+  color: #ffd700;
+  transform: scale(1.1);
+}
+
+.customer-navigation a:hover .fa-user-circle,
+.customer-navigation a.customer-active .fa-user-circle {
+  color: #ffd700;
+  transform: scale(1.1);
 }
 
 /* Customer actions section */
@@ -198,6 +183,9 @@
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .customer-logout-btn:hover {
@@ -254,6 +242,10 @@
   .customer-logo {
     height: 35px;
   }
+  
+  .nav-icon {
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -281,10 +273,18 @@
     padding: 4px 8px;
     font-size: 0.8rem;
     gap: 3px;
+    flex-direction: column;
+    text-align: center;
+    min-width: 60px;
   }
   
   .customer-actions {
     margin-left: auto;
+  }
+  
+  .nav-icon {
+    font-size: 0.9rem;
+    margin-bottom: 2px;
   }
 }
 
@@ -297,9 +297,19 @@
     padding: 3px 6px;
     font-size: 0.75rem;
     gap: 2px;
+    min-width: 50px;
   }
   
   .customer-brand-name {
     font-size: 1.1rem;
+  }
+  
+  .nav-icon {
+    font-size: 0.8rem;
+  }
+  
+  .customer-logout-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 }

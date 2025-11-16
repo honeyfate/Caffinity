@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../css/CustomerDashboard.css';
 import logo from '../../images/caffinity-logo.png';
-import { FaUserCircle, FaShoppingCart } from 'react-icons/fa';
-import '../css/CustomerDashboard.css';
+import { FaUserCircle, FaShoppingCart, FaCoffee, FaCookieBite, FaHome } from 'react-icons/fa';
 
 const CustomerDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Memoize the active section calculation
+  const getActiveSection = useCallback((path) => {
+    if (path.includes('/customer/coffee')) return 'coffee';
+    if (path.includes('/customer/desserts')) return 'desserts';
+    if (path.includes('/customer/cart')) return 'cart';
+    if (path.includes('/customer/profile')) return 'profile';
+    return 'home';
+  }, []);
+
   // Update active section based on current route
   useEffect(() => {
-    const path = location.pathname;
-    if (path.includes('/customer/coffee')) setActiveSection('coffee');
-    else if (path.includes('/customer/desserts')) setActiveSection('desserts');
-    else if (path.includes('/customer/cart')) setActiveSection('cart');
-    else if (path.includes('/customer/profile')) setActiveSection('profile');
-    else setActiveSection('home');
-  }, [location.pathname]);
+    const newActiveSection = getActiveSection(location.pathname);
+    setActiveSection(newActiveSection);
+  }, [location.pathname, getActiveSection]);
 
-  const handleLogoClick = () => {
+  const handleLogoClick = useCallback(() => {
     if (location.pathname !== '/customer') {
       navigate('/customer');
     } else {
@@ -29,17 +33,22 @@ const CustomerDashboard = () => {
         behavior: 'smooth'
       });
     }
-  };
+  }, [location.pathname, navigate]);
 
-  const handleNavClick = (section) => {
-    setActiveSection(section);
-  };
-
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
     navigate('/');
-  };
+  }, [navigate]);
+
+  // Memoize navigation items to prevent unnecessary re-renders
+  const navItems = [
+    { to: "/customer", section: "home", label: "Home", icon: <FaHome className="nav-icon" /> },
+    { to: "/customer/coffee", section: "coffee", label: "Coffee", icon: <FaCoffee className="nav-icon" /> },
+    { to: "/customer/desserts", section: "desserts", label: "Desserts", icon: <FaCookieBite className="nav-icon" /> },
+    { to: "/customer/cart", section: "cart", label: "Cart", icon: <FaShoppingCart className="nav-icon" /> },
+    { to: "/customer/profile", section: "profile", label: "Profile", icon: <FaUserCircle className="nav-icon" /> },
+  ];
 
   return (
     <header className="customer-dashboard">
@@ -49,43 +58,16 @@ const CustomerDashboard = () => {
       </div>
       
       <nav className="customer-navigation">
-        <Link 
-          to="/customer"
-          className={activeSection === 'home' ? 'customer-active' : ''}
-          onClick={() => handleNavClick('home')}
-        >
-          Home
-        </Link>
-        <Link 
-          to="/customer/coffee"
-          className={activeSection === 'coffee' ? 'customer-active' : ''}
-          onClick={() => handleNavClick('coffee')}
-        >
-          Coffee
-        </Link>
-        <Link 
-          to="/customer/desserts"
-          className={activeSection === 'desserts' ? 'customer-active' : ''}
-          onClick={() => handleNavClick('desserts')}
-        >
-          Desserts
-        </Link>
-        <Link 
-          to="/customer/cart"
-          className={activeSection === 'cart' ? 'customer-active' : ''}
-          onClick={() => handleNavClick('cart')}
-        >
-          <FaShoppingCart className="cart-icon" />
-          Cart
-        </Link>
-        <Link 
-          to="/customer/profile"
-          className={activeSection === 'profile' ? 'customer-active' : ''}
-          onClick={() => handleNavClick('profile')}
-        >
-          <FaUserCircle className="profile-icon" />
-          Profile
-        </Link>
+        {navItems.map((item) => (
+          <Link 
+            key={item.section}
+            to={item.to}
+            className={activeSection === item.section ? 'customer-active' : ''}
+          >
+            {item.icon}
+            {item.label}
+          </Link>
+        ))}
       </nav>
       
       <div className="customer-actions">
@@ -97,4 +79,4 @@ const CustomerDashboard = () => {
   );
 };
 
-export default CustomerDashboard;
+export default React.memo(CustomerDashboard);

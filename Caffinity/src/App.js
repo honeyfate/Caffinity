@@ -5,7 +5,8 @@ import Login from './components/pages/Login';
 import Register from './components/pages/Register';
 import Landing from './components/pages/Landing';
 import AdminLayout from './components/admin/AdminLayout';
-import CustomerDashboard from './components/customer/CustomerDashboard'; // Add this import
+import CustomerLayout from './components/customer/CustomerLayout'; // Add this import
+import CustomerDashboard from './components/customer/CustomerDashboard';
 import './App.css';
 
 const App = () => {
@@ -18,6 +19,7 @@ const App = () => {
         <Route path="/dashboard" element={<Dashboard />} /> {/* Keep this if you have existing dashboard */}
         <Route path="/customer" element={<CustomerDashboard />} /> {/* Add customer route */}
         <Route path="/admin/*" element={<AdminLayout />} />
+        <Route path="/customer/*" element={<CustomerLayout />} /> {/* Add customer layout route */}
       </Routes>
     </Router>
   );

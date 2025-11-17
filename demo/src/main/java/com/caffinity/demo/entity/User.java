@@ -34,6 +34,10 @@ public class User {
     @Column(nullable = false)
     private UserRole role = UserRole.CUSTOMER;
 
+    // ✅ FIXED: Profile picture field declared only once in the correct place
+    @Column(name = "profile_picture", columnDefinition = "LONGTEXT")
+    private String profilePicture;
+
     // Default constructor
     public User() {}
 
@@ -120,5 +124,53 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    // ✅ FIXED: Profile picture getter and setter in the right place
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+    
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    // Update profile method
+    public void updateProfile(String firstName, String lastName, String email, 
+                             String username, String phoneNumber, String profilePicture) {
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            this.firstName = firstName;
+        }
+        if (lastName != null && !lastName.trim().isEmpty()) {
+            this.lastName = lastName;
+        }
+        if (email != null && !email.trim().isEmpty()) {
+            this.email = email;
+        }
+        if (username != null && !username.trim().isEmpty()) {
+            this.username = username;
+        }
+        if (phoneNumber != null) {
+            this.phoneNumber = phoneNumber;
+        }
+        if (profilePicture != null) {
+            this.profilePicture = profilePicture;
+        }
+    }
+
+    public void changePassword(String newPassword) {
+        if (newPassword != null && !newPassword.trim().isEmpty()) {
+            this.password = newPassword;
+        }
+    }
+
+    // Method to handle profile picture data
+    public void setProfilePictureData(String profilePicture) {
+        // Handle empty string as removal
+        if (profilePicture != null && profilePicture.trim().isEmpty()) {
+            this.profilePicture = null;
+        } else {
+            this.profilePicture = profilePicture;
+        }
     }
 }

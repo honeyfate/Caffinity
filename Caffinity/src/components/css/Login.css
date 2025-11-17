@@ -473,7 +473,17 @@
 .role-icon {
   font-size: 1.5rem;
   margin-bottom: 0.2rem;
-  transition: all 0.5s ease-in-out;
+  transition: all 0.3s ease;
+  filter: sepia(1) saturate(3) hue-rotate(-10deg); /* Brown color filter */
+}
+
+.role-option:hover:not(:disabled) .role-icon {
+  filter: sepia(1) saturate(4) hue-rotate(-15deg) brightness(0.9); /* Darker brown on hover */
+}
+
+.role-option.role-active .role-icon {
+  filter: sepia(1) saturate(5) hue-rotate(-20deg) brightness(0.8); /* Even darker brown when active */
+  transform: scale(1.1);
 }
 
 .role-option.fade-out .role-icon {
@@ -505,4 +515,3 @@
     font-size: 1.3rem;
   }
 }
-

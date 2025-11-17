@@ -7,7 +7,17 @@ const CustomerCoffee = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState([]);
 
-  // Load cart from localStorage on component mount
+  // Generate or get session ID
+  const getSessionId = () => {
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('sessionId', sessionId);
+    }
+    return sessionId;
+  };
+
+  // Load cart from localStorage on component mount (fallback)
   useEffect(() => {
     const savedCart = localStorage.getItem('coffeeCart');
     if (savedCart) {
@@ -15,7 +25,7 @@ const CustomerCoffee = () => {
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes (fallback)
   useEffect(() => {
     localStorage.setItem('coffeeCart', JSON.stringify(cartItems));
   }, [cartItems]);
@@ -47,16 +57,23 @@ const CustomerCoffee = () => {
     fetchCoffeeProducts();
   }, []);
 
-  // Handle add to cart
-  const handleAddToCart = (product) => {
+  // Handle add to cart with database integration
+  const handleAddToCart = async (product) => {
     setIsLoading(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      const existingItem = cartItems.find(item => item.id === product.id);
+    try {
+      const sessionId = getSessionId();
+      await axios.post('http://localhost:8080/api/cart/add', 
+        { productId: product.id, quantity: 1 },
+        { headers: { 'X-Session-Id': sessionId } }
+      );
       
+      // Show success message
+      alert(`${product.name} added to cart!`);
+      
+      // Update local state for UI feedback
+      const existingItem = cartItems.find(item => item.id === product.id);
       if (existingItem) {
-        // Update quantity if item exists
         setCartItems(prevItems => 
           prevItems.map(item =>
             item.id === product.id
@@ -65,7 +82,27 @@ const CustomerCoffee = () => {
           )
         );
       } else {
-        // Add new item to cart
+        const newItem = {
+          ...product,
+          quantity: 1,
+          addedAt: new Date().toISOString()
+        };
+        setCartItems(prevItems => [...prevItems, newItem]);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      // Fallback to localStorage if API fails
+      const existingItem = cartItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        setCartItems(prevItems => 
+          prevItems.map(item =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        );
+      } else {
         const newItem = {
           ...product,
           quantity: 1,
@@ -74,19 +111,19 @@ const CustomerCoffee = () => {
         setCartItems(prevItems => [...prevItems, newItem]);
       }
       
-      setIsLoading(false);
-      
       // Show success message
       alert(`${product.name} added to cart!`);
-    }, 500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle buy now (add to cart and redirect to cart page)
-  const handleBuyNow = (product) => {
-    handleAddToCart(product);
+  const handleBuyNow = async (product) => {
+    await handleAddToCart(product);
     // Redirect to cart page after a short delay
     setTimeout(() => {
-      window.location.href = '/customer-cart'; // Adjust path to your CustomerCart route
+      window.location.href = '/customer-cart';
     }, 600);
   };
 

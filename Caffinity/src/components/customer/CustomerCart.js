@@ -1,51 +1,153 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import '../css/CustomerCart.css';
 
 const CustomerCart = () => {
   const [cartItems, setCartItems] = useState([]);
-
-  // Load cart from localStorage on component mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('coffeeCart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Generate or get session ID
+  const getSessionId = () => {
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('sessionId', sessionId);
     }
+    return sessionId;
+  };
+
+  // Load cart from database
+  const fetchCart = async () => {
+    try {
+      setIsLoading(true);
+      const sessionId = getSessionId();
+      const response = await axios.get('http://localhost:8080/api/cart', {
+        headers: { 'X-Session-Id': sessionId }
+      });
+      
+      console.log('Cart API Response:', response.data); // Debug log
+      
+      // Handle both database response structure and localStorage fallback
+      if (response.data && response.data.cartItems) {
+        setCartItems(response.data.cartItems || []);
+      } else if (response.data && Array.isArray(response.data)) {
+        setCartItems(response.data);
+      } else {
+        // Fallback to localStorage
+        const savedCart = localStorage.getItem('coffeeCart');
+        if (savedCart) {
+          setCartItems(JSON.parse(savedCart));
+        } else {
+          setCartItems([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+      // Fallback to localStorage if API fails
+      const savedCart = localStorage.getItem('coffeeCart');
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
   }, []);
 
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('coffeeCart', JSON.stringify(cartItems));
-  }, [cartItems]);
+  // Safe function to get item name
+  const getItemName = (item) => {
+    // Handle both database structure (item.product.name) and localStorage structure (item.name)
+    return item.product?.name || item.name || 'Unknown Product';
+  };
 
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity === 0) {
-      setCartItems(cartItems.filter(item => item.id !== id));
-    } else {
-      setCartItems(cartItems.map(item => 
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      ));
+  // Safe function to get item price
+  const getItemPrice = (item) => {
+    // Handle both database structure (item.price) and localStorage structure (item.price as string)
+    if (typeof item.price === 'number') {
+      return item.price;
+    } else if (typeof item.price === 'string') {
+      return parseFloat(item.price.replace('₱', '').replace(',', ''));
+    }
+    return 0;
+  };
+
+  // Safe function to get item category
+  const getItemCategory = (item) => {
+    return item.product?.category || item.category || '';
+  };
+
+  // Safe function to get product ID
+  const getProductId = (item) => {
+    return item.product?.id || item.id;
+  };
+
+  // Update quantity in database
+  const updateQuantity = async (productId, newQuantity) => {
+    try {
+      const sessionId = getSessionId();
+      
+      if (newQuantity === 0) {
+        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+          headers: { 'X-Session-Id': sessionId }
+        });
+      } else {
+        await axios.put('http://localhost:8080/api/cart/update', 
+          { productId, quantity: newQuantity },
+          { headers: { 'X-Session-Id': sessionId } }
+        );
+      }
+      fetchCart(); // Refresh cart data
+    } catch (error) {
+      console.error('Error updating cart:', error);
+      // Fallback to localStorage update
+      setCartItems(prevItems => {
+        if (newQuantity === 0) {
+          return prevItems.filter(item => getProductId(item) !== productId);
+        } else {
+          return prevItems.map(item => 
+            getProductId(item) === productId ? { ...item, quantity: newQuantity } : item
+          );
+        }
+      });
     }
   };
 
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      const price = parseFloat(item.price.replace('₱', '').replace(',', ''));
+      const price = getItemPrice(item);
       return total + (price * item.quantity);
     }, 0);
   };
 
   const handleContinueShopping = () => {
-    window.location.href = '/customer-coffee'; // Adjust path to your coffee page
+    window.location.href = '/customer/coffee';
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cartItems.length === 0) {
       alert('Your cart is empty!');
       return;
     }
-    // Here you can implement your checkout logic
-    alert('Proceeding to checkout!');
-    // window.location.href = '/checkout';
+    
+    try {
+      setIsLoading(true);
+      // Here you can implement checkout logic
+      alert('Proceeding to checkout!');
+      // After successful checkout, clear the cart
+      const sessionId = getSessionId();
+      await axios.delete('http://localhost:8080/api/cart/clear', {
+        headers: { 'X-Session-Id': sessionId }
+      });
+      setCartItems([]);
+      localStorage.removeItem('coffeeCart');
+    } catch (error) {
+      console.error('Error during checkout:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,7 +184,9 @@ const CustomerCart = () => {
               <h3 className="card-title">Cart Items ({cartItems.length})</h3>
             </div>
             <div className="card-content">
-              {cartItems.length === 0 ? (
+              {isLoading ? (
+                <div className="loading">Loading cart...</div>
+              ) : cartItems.length === 0 ? (
                 <div className="empty-cart">
                   <div className="empty-cart-icon">🛒</div>
                   <h3>Your cart is empty</h3>
@@ -96,29 +200,31 @@ const CustomerCart = () => {
                 </div>
               ) : (
                 cartItems.map(item => (
-                  <div key={item.id} className="cart-item-detail">
+                  <div key={item.id || getProductId(item)} className="cart-item-detail">
                     <div className="item-info">
-                      <h4>{item.name}</h4>
-                      <p>{item.price} each</p>
-                      {item.category && <small>Category: {item.category}</small>}
+                      <h4>{getItemName(item)}</h4>
+                      <p>₱{getItemPrice(item).toFixed(2)} each</p>
+                      {getItemCategory(item) && <small>Category: {getItemCategory(item)}</small>}
                     </div>
                     <div className="quantity-controls">
                       <button 
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(getProductId(item), item.quantity - 1)}
                         className="quantity-btn"
+                        disabled={isLoading}
                       >
                         -
                       </button>
                       <span className="quantity">{item.quantity}</span>
                       <button 
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(getProductId(item), item.quantity + 1)}
                         className="quantity-btn"
+                        disabled={isLoading}
                       >
                         +
                       </button>
                     </div>
                     <div className="item-total">
-                      ₱{(parseFloat(item.price.replace('₱', '')) * item.quantity).toFixed(2)}
+                      ₱{(getItemPrice(item) * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))
@@ -154,13 +260,14 @@ const CustomerCart = () => {
               <button 
                 className="card-btn" 
                 onClick={handleCheckout}
-                disabled={cartItems.length === 0}
+                disabled={cartItems.length === 0 || isLoading}
               >
-                Proceed to Checkout
+                {isLoading ? 'Processing...' : 'Proceed to Checkout'}
               </button>
               <button 
                 className="card-btn secondary"
                 onClick={handleContinueShopping}
+                disabled={isLoading}
               >
                 Continue Shopping
               </button>

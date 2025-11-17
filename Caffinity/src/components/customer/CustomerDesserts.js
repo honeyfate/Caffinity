@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { FaCartPlus, FaCheck, FaShoppingCart } from 'react-icons/fa';
 import '../css/CustomerDesserts.css';
 
 const CustomerDesserts = () => {
   const [dessertProducts, setDessertProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState([]);
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
   // Generate or get session ID
   const getSessionId = () => {
@@ -15,6 +17,14 @@ const CustomerDesserts = () => {
       localStorage.setItem('sessionId', sessionId);
     }
     return sessionId;
+  };
+
+  // Show custom notification
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 3000);
   };
 
   // Fetch current cart from database
@@ -94,14 +104,14 @@ const CustomerDesserts = () => {
         await axios.delete(`http://localhost:8080/api/cart/remove/${product.id}`, {
           headers: { 'X-Session-Id': sessionId }
         });
-        alert(`${product.name} removed from cart!`);
+        showNotification(`${product.name} removed from cart!`, 'success');
       } else {
         // Add to cart
         await axios.post('http://localhost:8080/api/cart/add', 
           { productId: product.id, quantity: 1 },
           { headers: { 'X-Session-Id': sessionId } }
         );
-        alert(`${product.name} added to cart!`);
+        showNotification(`${product.name} added to cart!`, 'success');
       }
       
       // Refresh cart data
@@ -119,11 +129,11 @@ const CustomerDesserts = () => {
       if (existingItemIndex > -1) {
         // Remove from cart
         cartItems.splice(existingItemIndex, 1);
-        alert(`${product.name} removed from cart!`);
+        showNotification(`${product.name} removed from cart!`, 'success');
       } else {
         // Add to cart
         cartItems.push({ ...product, quantity: 1 });
-        alert(`${product.name} added to cart!`);
+        showNotification(`${product.name} added to cart!`, 'success');
       }
       
       localStorage.setItem('cart', JSON.stringify(cartItems));
@@ -168,6 +178,19 @@ const CustomerDesserts = () => {
 
   return (
     <div className="customer-desserts-section">
+      {/* Custom Notification */}
+      {notification.show && (
+        <div className={`custom-notification ${notification.type}`}>
+          <div className="notification-content">
+            <div className="notification-icon">
+              {notification.type === 'success' ? <FaCheck /> : '⚠'}
+            </div>
+            <div className="notification-message">{notification.message}</div>
+          </div>
+          <div className="notification-progress"></div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="desserts-section-header">
         <div className="header-content">
@@ -212,9 +235,9 @@ const CustomerDesserts = () => {
                     title={isInCart(product.id) ? 'Remove from Cart' : 'Add to Cart'}
                   >
                     {isInCart(product.id) ? (
-                      <span className="check-icon">✓</span>
+                      <FaCheck className="check-icon" />
                     ) : (
-                      <span className="cart-icon">🛒</span>
+                      <FaCartPlus className="cart-icon" />
                     )}
                   </button>
                   <button 

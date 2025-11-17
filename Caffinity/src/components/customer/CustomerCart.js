@@ -5,6 +5,10 @@ import '../css/CustomerCart.css';
 const CustomerCart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   
   // Generate or get session ID
   const getSessionId = () => {
@@ -32,7 +36,7 @@ const CustomerCart = () => {
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
-        const savedCart = localStorage.getItem('coffeeCart');
+        const savedCart = localStorage.getItem('cart');
         if (savedCart) {
           setCartItems(JSON.parse(savedCart));
         } else {
@@ -41,7 +45,7 @@ const CustomerCart = () => {
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      const savedCart = localStorage.getItem('coffeeCart');
+      const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
       }
@@ -92,6 +96,31 @@ const CustomerCart = () => {
     return `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
   };
 
+  // Handle checkbox selection
+  const handleSelectItem = (productId) => {
+    setSelectedItems(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(productId)) {
+        newSelected.delete(productId);
+      } else {
+        newSelected.add(productId);
+      }
+      return newSelected;
+    });
+  };
+
+  // Select all items
+  const handleSelectAll = () => {
+    if (selectedItems.size === cartItems.length) {
+      // If all are selected, deselect all
+      setSelectedItems(new Set());
+    } else {
+      // Select all items
+      const allItemIds = cartItems.map(item => getProductId(item));
+      setSelectedItems(new Set(allItemIds));
+    }
+  };
+
   // Update quantity in database
   const updateQuantity = async (productId, newQuantity) => {
     try {
@@ -121,6 +150,21 @@ const CustomerCart = () => {
     }
   };
 
+  // Show delete confirmation modal
+  const showDeleteConfirmation = (productId, productName) => {
+    setProductToDelete({ id: productId, name: productName });
+    setShowDeleteModal(true);
+  };
+
+  // Show bulk delete confirmation modal
+  const showBulkDeleteConfirmation = () => {
+    if (selectedItems.size === 0) {
+      alert('Please select items to remove');
+      return;
+    }
+    setShowBulkDeleteModal(true);
+  };
+
   // Remove item from cart completely
   const removeFromCart = async (productId) => {
     try {
@@ -128,18 +172,98 @@ const CustomerCart = () => {
       await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
         headers: { 'X-Session-Id': sessionId }
       });
+      // Remove from selected items if it was selected
+      setSelectedItems(prev => {
+        const newSelected = new Set(prev);
+        newSelected.delete(productId);
+        return newSelected;
+      });
       fetchCart(); // Refresh cart data
     } catch (error) {
       console.error('Error removing from cart:', error);
       // Fallback to localStorage
       setCartItems(prevItems => prevItems.filter(item => getProductId(item) !== productId));
+      setSelectedItems(prev => {
+        const newSelected = new Set(prev);
+        newSelected.delete(productId);
+        return newSelected;
+      });
     }
   };
 
+  // Confirm single item deletion
+  const confirmDelete = async () => {
+    if (productToDelete) {
+      await removeFromCart(productToDelete.id);
+      setShowDeleteModal(false);
+      setProductToDelete(null);
+    }
+  };
+
+  // Cancel single item deletion
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setProductToDelete(null);
+  };
+
+  // Remove selected items from cart
+  const removeSelectedItems = async () => {
+    try {
+      setIsLoading(true);
+      const sessionId = getSessionId();
+      
+      // Remove each selected item
+      for (const productId of selectedItems) {
+        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+          headers: { 'X-Session-Id': sessionId }
+        });
+      }
+      
+      setSelectedItems(new Set());
+      fetchCart(); // Refresh cart data
+      setShowBulkDeleteModal(false);
+    } catch (error) {
+      console.error('Error removing selected items:', error);
+      // Fallback to localStorage
+      setCartItems(prevItems => prevItems.filter(item => !selectedItems.has(getProductId(item))));
+      setSelectedItems(new Set());
+      setShowBulkDeleteModal(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cancel bulk deletion
+  const cancelBulkDelete = () => {
+    setShowBulkDeleteModal(false);
+  };
+
+  // Get total price for all items
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       const price = getItemPrice(item);
       return total + (price * item.quantity);
+    }, 0);
+  };
+
+  // Get total price for selected items only
+  const getSelectedTotalPrice = () => {
+    return cartItems.reduce((total, item) => {
+      if (selectedItems.has(getProductId(item))) {
+        const price = getItemPrice(item);
+        return total + (price * item.quantity);
+      }
+      return total;
+    }, 0);
+  };
+
+  // Get total quantity for selected items
+  const getSelectedTotalQuantity = () => {
+    return cartItems.reduce((total, item) => {
+      if (selectedItems.has(getProductId(item))) {
+        return total + item.quantity;
+      }
+      return total;
     }, 0);
   };
 
@@ -148,20 +272,29 @@ const CustomerCart = () => {
   };
 
   const handleCheckout = async () => {
-    if (cartItems.length === 0) {
-      alert('Your cart is empty!');
+    const selectedCount = selectedItems.size;
+    
+    if (selectedCount === 0) {
+      alert('Please select at least one item to checkout!');
       return;
     }
     
     try {
       setIsLoading(true);
-      alert('Proceeding to checkout!');
+      alert(`Proceeding to checkout with ${selectedCount} item(s)!`);
+      // Here you would typically pass the selected items to your checkout process
+      // For now, we'll just clear the selected items from cart
       const sessionId = getSessionId();
-      await axios.delete('http://localhost:8080/api/cart/clear', {
-        headers: { 'X-Session-Id': sessionId }
-      });
-      setCartItems([]);
-      localStorage.removeItem('coffeeCart');
+      
+      // Remove each selected item (simulating checkout)
+      for (const productId of selectedItems) {
+        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+          headers: { 'X-Session-Id': sessionId }
+        });
+      }
+      
+      setSelectedItems(new Set());
+      fetchCart(); // Refresh cart data
     } catch (error) {
       console.error('Error during checkout:', error);
     } finally {
@@ -169,8 +302,80 @@ const CustomerCart = () => {
     }
   };
 
+  // Get selected product names for bulk delete modal
+  const getSelectedProductNames = () => {
+    return cartItems
+      .filter(item => selectedItems.has(getProductId(item)))
+      .map(item => getItemName(item));
+  };
+
   return (
     <div className="customer-cart">
+      {/* Single Item Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="confirmation-modal-overlay">
+          <div className="confirmation-modal">
+            <div className="modal-header">
+              <h3>Remove Item</h3>
+            </div>
+            <div className="modal-content">
+              <p>Are you sure you want to remove <strong>"{productToDelete?.name}"</strong> from your cart?</p>
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="modal-btn cancel-btn"
+                onClick={cancelDelete}
+                disabled={isLoading}
+              >
+                No, Keep It
+              </button>
+              <button 
+                className="modal-btn confirm-btn"
+                onClick={confirmDelete}
+                disabled={isLoading}
+              >
+                Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="confirmation-modal-overlay">
+          <div className="confirmation-modal">
+            <div className="modal-header">
+              <h3>Remove Selected Items</h3>
+            </div>
+            <div className="modal-content">
+              <p>Are you sure you want to remove {selectedItems.size} item(s) from your cart?</p>
+              <div className="selected-items-list">
+                {getSelectedProductNames().map((name, index) => (
+                  <div key={index} className="selected-item-name">• {name}</div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="modal-btn cancel-btn"
+                onClick={cancelBulkDelete}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-btn confirm-btn"
+                onClick={removeSelectedItems}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Removing...' : `Remove ${selectedItems.size} Items`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <h1>Shopping Cart</h1>
         <p>Review your items and proceed to checkout</p>
@@ -200,7 +405,39 @@ const CustomerCart = () => {
         <div className="cart-items-section">
           <div className="content-card">
             <div className="card-header">
-              <h3 className="card-title">Cart Items ({cartItems.length})</h3>
+              <div className="cart-header-actions">
+                <h3 className="card-title">
+                  Cart Items ({cartItems.length})
+                  {selectedItems.size > 0 && (
+                    <span className="selected-count">
+                      ({selectedItems.size} selected)
+                    </span>
+                  )}
+                </h3>
+                {cartItems.length > 0 && (
+                  <div className="bulk-actions">
+                    <label className="select-all-label">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+                        onChange={handleSelectAll}
+                        disabled={isLoading}
+                      />
+                      <span className="checkmark"></span>
+                      Select All
+                    </label>
+                    {selectedItems.size > 0 && (
+                      <button 
+                        className="remove-selected-btn"
+                        onClick={showBulkDeleteConfirmation}
+                        disabled={isLoading}
+                      >
+                        Remove Selected ({selectedItems.size})
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="card-content">
               {isLoading ? (
@@ -219,57 +456,85 @@ const CustomerCart = () => {
                 </div>
               ) : (
                 <div className="cart-items-list">
-                  {cartItems.map(item => (
-                    <div key={item.id || getProductId(item)} className="cart-item-card">
-                      <div className="cart-item-image">
-                        <img 
-                          src={getProductImage(item)} 
-                          alt={getItemName(item)}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
-                          }}
-                        />
-                      </div>
-                      <div className="cart-item-details">
-                        <div className="item-info">
-                          <h4>{getItemName(item)}</h4>
-                          <p className="item-price">₱{getItemPrice(item).toFixed(2)} each</p>
-                          {getItemCategory(item) && <small className="item-category">Category: {getItemCategory(item)}</small>}
-                        </div>
-                        <div className="item-controls">
-                          <div className="quantity-controls">
-                            <button 
-                              onClick={() => updateQuantity(getProductId(item), item.quantity - 1)}
-                              className="quantity-btn"
-                              disabled={isLoading}
-                            >
-                              -
-                            </button>
-                            <span className="quantity">{item.quantity}</span>
-                            <button 
-                              onClick={() => updateQuantity(getProductId(item), item.quantity + 1)}
-                              className="quantity-btn"
-                              disabled={isLoading}
-                            >
-                              +
-                            </button>
-                          </div>
-                          <button 
-                            className="delete-btn"
-                            onClick={() => removeFromCart(getProductId(item))}
+                  {cartItems.map(item => {
+                    const productId = getProductId(item);
+                    const isSelected = selectedItems.has(productId);
+                    const productName = getItemName(item);
+                    
+                    return (
+                      <div key={item.id || productId} className={`cart-item-card ${isSelected ? 'selected' : ''}`}>
+                        <div className="cart-item-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSelectItem(productId)}
                             disabled={isLoading}
-                            title="Remove item"
-                          >
-                            🗑️
-                          </button>
+                          />
+                        </div>
+                        
+                        {/* Delete X button */}
+                        <button 
+                          className="delete-btn-x"
+                          onClick={() => showDeleteConfirmation(productId, productName)}
+                          disabled={isLoading}
+                          title="Remove item"
+                        >
+                          ×
+                        </button>
+                        
+                        <div className="cart-item-image">
+                          <img 
+                            src={getProductImage(item)} 
+                            alt={productName}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(productName.charAt(0))}`;
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="cart-item-details">
+                          <div className="product-info-section">
+                            <div className="product-name-section">
+                              <h4 className="product-name">{productName}</h4>
+                              {getItemCategory(item) && (
+                                <span className="product-category-badge">{getItemCategory(item)}</span>
+                              )}
+                            </div>
+                            <div className="price-section">
+                              <p className="unit-price">₱{getItemPrice(item).toFixed(2)} each</p>
+                            </div>
+                          </div>
+                          
+                          <div className="quantity-section">
+                            <div className="quantity-controls">
+                              <button 
+                                onClick={() => updateQuantity(productId, item.quantity - 1)}
+                                className="quantity-btn"
+                                disabled={isLoading}
+                              >
+                                -
+                              </button>
+                              <span className="quantity">{item.quantity}</span>
+                              <button 
+                                onClick={() => updateQuantity(productId, item.quantity + 1)}
+                                className="quantity-btn"
+                                disabled={isLoading}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="total-section">
+                            <div className="item-total">
+                              ₱{(getItemPrice(item) * item.quantity).toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="item-total">
-                        ₱{(getItemPrice(item) * item.quantity).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -279,33 +544,51 @@ const CustomerCart = () => {
         <div className="order-summary">
           <div className="content-card">
             <div className="card-header">
-              <h3 className="card-title">Order Summary</h3>
+              <h3 className="card-title">
+                Order Summary
+                {selectedItems.size > 0 && (
+                  <span className="selected-summary">(Selected Items)</span>
+                )}
+              </h3>
             </div>
             <div className="card-content">
               <div className="summary-row">
-                <span>Items ({cartItems.reduce((total, item) => total + item.quantity, 0)}):</span>
-                <span>₱{getTotalPrice().toFixed(2)}</span>
+                <span>
+                  Items ({selectedItems.size > 0 ? getSelectedTotalQuantity() : cartItems.reduce((total, item) => total + item.quantity, 0)}):
+                </span>
+                <span>
+                  ₱{selectedItems.size > 0 ? getSelectedTotalPrice().toFixed(2) : getTotalPrice().toFixed(2)}
+                </span>
               </div>
               <div className="summary-row">
                 <span>Shipping:</span>
-                <span>₱{cartItems.length > 0 ? '50.00' : '0.00'}</span>
+                <span>
+                  ₱{(selectedItems.size > 0 ? selectedItems.size : cartItems.length) > 0 ? '50.00' : '0.00'}
+                </span>
               </div>
               <div className="summary-row">
                 <span>Tax:</span>
-                <span>₱{(getTotalPrice() * 0.12).toFixed(2)}</span>
+                <span>
+                  ₱{((selectedItems.size > 0 ? getSelectedTotalPrice() : getTotalPrice()) * 0.12).toFixed(2)}
+                </span>
               </div>
               <div className="summary-row total">
                 <span>Total:</span>
-                <span>₱{(getTotalPrice() * 1.12 + (cartItems.length > 0 ? 50 : 0)).toFixed(2)}</span>
+                <span>
+                  ₱{(
+                    (selectedItems.size > 0 ? getSelectedTotalPrice() : getTotalPrice()) * 1.12 + 
+                    ((selectedItems.size > 0 ? selectedItems.size : cartItems.length) > 0 ? 50 : 0)
+                  ).toFixed(2)}
+                </span>
               </div>
             </div>
             <div className="card-actions">
               <button 
                 className="card-btn" 
                 onClick={handleCheckout}
-                disabled={cartItems.length === 0 || isLoading}
+                disabled={cartItems.length === 0 || isLoading || selectedItems.size === 0}
               >
-                {isLoading ? 'Processing...' : 'Proceed to Checkout'}
+                {isLoading ? 'Processing...' : `Checkout (${selectedItems.size})`}
               </button>
               <button 
                 className="card-btn secondary"

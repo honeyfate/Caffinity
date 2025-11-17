@@ -154,19 +154,48 @@ const AdminCoffee = () => {
     setShowAddForm(true);
   };
 
-  // Delete product
-  const handleDelete = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await axios.delete(`http://localhost:8080/api/products/${productId}`);
-        setCoffeeProducts(prev => prev.filter(product => product.id !== productId));
-        alert('Product deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Error deleting product. Please try again.');
+// Delete product
+const handleDelete = async (productId) => {
+  if (window.confirm('Are you sure you want to delete this product?')) {
+    try {
+      setIsLoading(true);
+      console.log('🔄 Attempting to delete product with ID:', productId);
+      
+      const response = await axios.delete(`http://localhost:8080/api/products/${productId}`);
+      console.log('✅ Delete response:', response.status, response.statusText);
+      
+      // Use setCoffeeProducts for coffee
+      setCoffeeProducts(prev => prev.filter(product => product.id !== productId));
+      alert('Product deleted successfully!');
+      
+    } catch (error) {
+      console.error('❌ Full error object:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error code:', error.code);
+      
+      let errorMessage = 'Error deleting product. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        errorMessage = `Server Error: ${error.response.status} - ${error.response.statusText}`;
+        if (error.response.data) {
+          errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Network Error: No response from server. Check if backend is running.';
+      } else {
+        // Something else happened
+        errorMessage = `Error: ${error.message}`;
       }
+      
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+};
 
   // Get image source for product
   const getProductImage = (product) => {

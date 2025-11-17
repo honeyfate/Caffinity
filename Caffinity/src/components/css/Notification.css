@@ -1,0 +1,117 @@
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 300px;
+  max-width: 400px;
+  padding: 0;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: slideInRight 0.3s ease-out;
+  border: 1px solid;
+  overflow: hidden;
+}
+
+.notification.success {
+  background: linear-gradient(135deg, #f8f5f0, #e8d5b5);
+  border-color: #8B4513;
+}
+
+.notification.error {
+  background: linear-gradient(135deg, #fef7f7, #f8e8e8);
+  border-color: #dc3545;
+}
+
+.notification.info {
+  background: linear-gradient(135deg, #f0f7ff, #e8f2ff);
+  border-color: #3e2723;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notification.success .notification-icon {
+  color: #8B4513;
+}
+
+.notification.error .notification-icon {
+  color: #dc3545;
+}
+
+.notification.info .notification-icon {
+  color: #3e2723;
+}
+
+.notification-message {
+  flex: 1;
+  color: #3e2723;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-close:hover {
+  background: rgba(139, 69, 19, 0.1);
+  color: #8B4513;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.notification.closing {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+}

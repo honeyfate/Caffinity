@@ -286,3 +286,142 @@
   font-size: 1.4rem;
   font-weight: bold;
 }
+/* Custom Notification Styles */
+.custom-notification {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  min-width: 300px;
+  z-index: 1000;
+  border-left: 4px solid #27ae60;
+  animation: slideInRight 0.3s ease;
+}
+
+.custom-notification.success {
+  border-left-color: #27ae60;
+}
+
+.custom-notification.error {
+  border-left-color: #e74c3c;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 1.2rem;
+  color: #27ae60;
+}
+
+.custom-notification.success .notification-icon {
+  color: #27ae60;
+}
+
+.custom-notification.error .notification-icon {
+  color: #e74c3c;
+}
+
+.notification-message {
+  color: #2c1a0a;
+  font-weight: 500;
+  flex: 1;
+}
+
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #27ae60;
+  animation: progress 3s linear;
+}
+
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Update Add to Cart Button for React Icons */
+.add-to-cart-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #2c1a0a;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  transform: scale(1.08);
+  background: #3a2210;
+}
+
+.add-to-cart-btn.in-cart {
+  background: #27ae60;
+  box-shadow: 0 0 12px rgba(39, 174, 96, 0.6);
+  transform: scale(1.12);
+}
+
+.cart-icon,
+.check-icon {
+  transition: all 0.3s ease;
+  font-size: 1.2rem;
+}
+
+.add-to-cart-btn.in-cart .cart-icon {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.add-to-cart-btn.in-cart .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Animation for cart icon transform */
+@keyframes cartToCheck {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.add-to-cart-btn.in-cart {
+  animation: cartToCheck 0.4s ease;
+}

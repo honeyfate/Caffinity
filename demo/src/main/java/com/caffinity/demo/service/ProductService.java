@@ -11,9 +11,12 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.caffinity.demo.entity.CartItem;
 import com.caffinity.demo.entity.Product;
+import com.caffinity.demo.repository.CartItemRepository;
 import com.caffinity.demo.repository.ProductRepository;
 
 @Service
@@ -21,6 +24,9 @@ public class ProductService {
     
     @Autowired
     private ProductRepository productRepository;
+    
+    @Autowired
+    private CartItemRepository cartItemRepository;
     
     @Value("${file.upload-dir:src/uploads}")
     private String uploadDir;
@@ -49,8 +55,99 @@ public class ProductService {
         return productRepository.save(product);
     }
     
+    // UPDATED METHOD WITH COMPREHENSIVE DEBUGGING
+    @Transactional
     public void deleteProduct(Long id) {
-        productRepository.deleteById(id);
+        try {
+            System.out.println("=== STARTING PRODUCT DELETION FOR ID: " + id + " ===");
+            
+            // First, check if product exists
+            Optional<Product> product = productRepository.findById(id);
+            if (!product.isPresent()) {
+                System.err.println("❌ Product not found with ID: " + id);
+                throw new RuntimeException("Product not found with ID: " + id);
+            }
+            System.out.println("✅ Product found: " + product.get().getName());
+            
+            // Find and display cart items before deletion
+            System.out.println("🔍 Searching for cart items with product ID: " + id);
+            List<CartItem> cartItems = cartItemRepository.findByProductId(id);
+            System.out.println("📦 Found " + cartItems.size() + " cart items to delete");
+            
+            if (!cartItems.isEmpty()) {
+                cartItems.forEach(item -> 
+                    System.out.println("   - Cart Item ID: " + item.getId() + ", Cart ID: " + 
+                        (item.getCart() != null ? item.getCart().getId() : "null")));
+                
+                // Delete all cart items that reference this product
+                System.out.println("🗑️ Deleting cart items using repository method...");
+                cartItemRepository.deleteByProductId(id);
+                System.out.println("✅ Cart items deleted successfully using repository method");
+            } else {
+                System.out.println("✅ No cart items found for this product");
+            }
+            
+            // Verify cart items are gone
+            List<CartItem> remainingItems = cartItemRepository.findByProductId(id);
+            System.out.println("🔍 Verification: " + remainingItems.size() + " cart items remaining after deletion");
+            
+            // Then delete the product
+            System.out.println("🗑️ Deleting product from database...");
+            productRepository.deleteById(id);
+            System.out.println("✅ Product deleted successfully from database");
+            
+            System.out.println("=== PRODUCT DELETION COMPLETED SUCCESSFULLY ===");
+            
+        } catch (Exception e) {
+            System.err.println("❌ ERROR deleting product with ID " + id + ": " + e.getMessage());
+            System.err.println("❌ Error type: " + e.getClass().getName());
+            System.err.println("❌ Stack trace:");
+            e.printStackTrace();
+            
+            // Try alternative approach if the first one fails
+            try {
+                System.out.println("🔄 Attempting alternative deletion approach...");
+                alternativeDeleteProduct(id);
+            } catch (Exception altException) {
+                System.err.println("❌ Alternative approach also failed: " + altException.getMessage());
+                throw new RuntimeException("Failed to delete product after multiple attempts: " + e.getMessage(), e);
+            }
+        }
+    }
+    
+    // Alternative deletion method
+    @Transactional
+    private void alternativeDeleteProduct(Long id) {
+        try {
+            System.out.println("=== ALTERNATIVE DELETION APPROACH ===");
+            
+            // Delete cart items using individual deletion
+            List<CartItem> cartItems = cartItemRepository.findByProductId(id);
+            System.out.println("Found " + cartItems.size() + " cart items for alternative deletion");
+            
+            if (!cartItems.isEmpty()) {
+                // Delete each cart item individually
+                for (CartItem cartItem : cartItems) {
+                    System.out.println("Deleting cart item individually: " + cartItem.getId());
+                    cartItemRepository.delete(cartItem);
+                }
+                System.out.println("All cart items deleted individually");
+                
+                // Flush to ensure deletions are committed
+                cartItemRepository.flush();
+            }
+            
+            // Now delete the product
+            System.out.println("Deleting product using alternative method...");
+            productRepository.deleteById(id);
+            productRepository.flush();
+            
+            System.out.println("✅ Alternative deletion completed successfully");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Alternative deletion failed: " + e.getMessage());
+            throw e;
+        }
     }
     
     public Product updateProduct(Long id, Product productDetails) {

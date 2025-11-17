@@ -1,5 +1,6 @@
 package com.caffinity.demo.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,4 +19,12 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     
     @Query("SELECT ci FROM CartItem ci WHERE ci.cart.sessionId = :sessionId AND ci.product.id = :productId")
     Optional<CartItem> findBySessionIdAndProductId(@Param("sessionId") String sessionId, @Param("productId") Long productId);
+    
+    // NEW METHODS FOR BUG FIX
+    @Modifying
+    @Query("DELETE FROM CartItem ci WHERE ci.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
+    
+    @Query("SELECT ci FROM CartItem ci WHERE ci.product.id = :productId")
+    List<CartItem> findByProductId(@Param("productId") Long productId);
 }

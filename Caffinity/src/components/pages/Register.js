@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/Register.css';
 import axios from 'axios';
+import Notification from '../common/Notification';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,6 +14,15 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const hideNotification = () => {
+    setNotification(null);
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -22,7 +32,7 @@ const Register = () => {
     e.preventDefault();
 
     if (form.password !== form.confirmPassword) {
-      alert('Passwords do not match!');
+      showNotification('Passwords do not match!', 'error');
       return;
     }
 
@@ -34,56 +44,44 @@ const Register = () => {
       firstName: form.firstName,
       lastName: form.lastName,
       phoneNumber: form.phoneNumber,
-      // Role is automatically set to CUSTOMER by backend
     };
 
-    console.log('Attempting to register:', newUser);
-
     try {
-      // First, test if the backend is reachable
       try {
         const testResponse = await axios.get('http://localhost:8080/api/users/test');
         console.log('Backend connection test:', testResponse.data);
       } catch (testError) {
         console.error('Backend connection failed:', testError);
-        alert('Cannot connect to server. Please make sure the backend is running on port 8080.');
+        showNotification('Cannot connect to server. Please make sure the backend is running on port 8080.', 'error');
         return;
       }
 
-      // If backend is reachable, proceed with registration
       const response = await axios.post('http://localhost:8080/api/users/register', newUser, {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000 // 10 second timeout
+        timeout: 10000
       });
       
-      console.log('Registration response:', response);
-      
       if (response.status === 200 || response.status === 201) {
-        alert('Registration successful!');
-        navigate('/login');
+        showNotification('Registration successful! Welcome to Caffinity! ☕', 'success');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       }
     } catch (error) {
       console.error('Full error object:', error);
       
       if (error.code === 'ECONNREFUSED') {
-        alert('Connection refused. Please ensure the Spring Boot server is running on port 8080.');
+        showNotification('Connection refused. Please ensure the Spring Boot server is running on port 8080.', 'error');
       } else if (error.code === 'NETWORK_ERROR') {
-        alert('Network error. Check your internet connection and ensure the server is running.');
+        showNotification('Network error. Check your internet connection and ensure the server is running.', 'error');
       } else if (error.response) {
-        // Server responded with error status
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        alert(`Registration failed: ${error.response.data?.message || error.response.statusText}`);
+        showNotification(`Registration failed: ${error.response.data?.message || error.response.statusText}`, 'error');
       } else if (error.request) {
-        // Request was made but no response received
-        console.error('No response received:', error.request);
-        alert('No response from server. The server might be down.');
+        showNotification('No response from server. The server might be down.', 'error');
       } else {
-        // Something else happened
-        console.error('Error message:', error.message);
-        alert(`Registration failed: ${error.message}`);
+        showNotification(`Registration failed: ${error.message}`, 'error');
       }
     }
   };
@@ -94,6 +92,14 @@ const Register = () => {
 
   return (
     <div className="auth-container">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
+      
       <div className="auth-form-wrapper">
         <form className="auth-form" onSubmit={handleRegister}>
           {/* Back button */}

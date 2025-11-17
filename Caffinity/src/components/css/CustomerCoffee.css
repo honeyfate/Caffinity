@@ -156,7 +156,6 @@
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   flex-shrink: 0;
@@ -168,8 +167,8 @@
 }
 
 .add-to-cart-btn.in-cart {
-  background: #27ae60;
-  box-shadow: 0 0 12px rgba(39, 174, 96, 0.6);
+  background: #8B4513;
+  box-shadow: 0 0 12px rgba(139, 69, 19, 0.6);
   transform: scale(1.12);
 }
 
@@ -193,7 +192,6 @@
   opacity: 1;
   transform: scale(1);
 }
-
 
 .no-products {
   text-align: center;
@@ -313,36 +311,41 @@
   cursor: not-allowed;
   transform: none;
 }
-/* Custom Notification Styles */
+
+/* Custom Notification Styles - Coffee Themed */
 .custom-notification {
   position: fixed;
-  top: 100px;
-  right: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 16px;
-  min-width: 300px;
-  z-index: 1000;
-  border-left: 4px solid #27ae60;
-  animation: slideInRight 0.3s ease;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #f8f5f0, #e8d5b5);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.15);
+  padding: 18px 22px;
+  min-width: 320px;
+  max-width: 450px;
+  z-index: 10000;
+  border: 2px solid #8B4513;
+  animation: slideInTop 0.3s ease-out;
 }
 
 .custom-notification.success {
-  border-left-color: #27ae60;
+  border-color: #8B4513;
+  background: linear-gradient(135deg, #f8f5f0, #e8d5b5);
 }
 
 .custom-notification.error {
-  border-left-color: #e74c3c;
+  border-color: #a0522d;
+  background: linear-gradient(135deg, #fef7f7, #f8e8e8);
 }
 
-@keyframes slideInRight {
+@keyframes slideInTop {
   from {
-    transform: translateX(100%);
+    transform: translateX(-50%) translateY(-100%);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
 }
@@ -350,35 +353,40 @@
 .notification-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .notification-icon {
-  font-size: 1.2rem;
-  color: #27ae60;
+  font-size: 1.5rem;
+  color: #8B4513;
+  flex-shrink: 0;
 }
 
 .custom-notification.success .notification-icon {
-  color: #27ae60;
+  color: #8B4513;
 }
 
 .custom-notification.error .notification-icon {
-  color: #e74c3c;
+  color: #a0522d;
 }
 
 .notification-message {
-  color: #2c1a0a;
-  font-weight: 500;
+  color: #3e2723;
+  font-weight: 600;
+  font-size: 1.1rem;
   flex: 1;
+  text-align: center;
+  line-height: 1.3;
 }
 
 .notification-progress {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 3px;
-  background: #27ae60;
+  height: 4px;
+  background: linear-gradient(90deg, #8B4513, #a0522d, #8B4513);
   animation: progress 3s linear;
+  border-radius: 0 0 12px 12px;
 }
 
 @keyframes progress {
@@ -387,6 +395,39 @@
   }
   to {
     width: 0%;
+  }
+}
+
+/* Responsive Design for Notifications */
+@media (max-width: 768px) {
+  .custom-notification {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    transform: none;
+    min-width: auto;
+    max-width: none;
+    margin: 0 auto;
+    padding: 16px 20px;
+  }
+  
+  .notification-message {
+    font-size: 1rem;
+  }
+  
+  .notification-icon {
+    font-size: 1.3rem;
+  }
+  
+  @keyframes slideInTop {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }
 
@@ -415,8 +456,8 @@
 }
 
 .add-to-cart-btn.in-cart {
-  background: #27ae60;
-  box-shadow: 0 0 12px rgba(39, 174, 96, 0.6);
+  background: #8B4513;
+  box-shadow: 0 0 12px rgba(139, 69, 19, 0.6);
   transform: scale(1.12);
 }
 

@@ -3,15 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import '../css/Login.css';
 import caffinityLogo from '../../images/caffinity-logo.png';
 import axios from 'axios';
+import Notification from '../common/Notification';
 
 const Login = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: '',
     password: '',
-    role: 'customer' // Default role
+    role: 'customer'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const hideNotification = () => {
+    setNotification(null);
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,10 +31,7 @@ const Login = () => {
     setForm({ ...form, role });
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    
-     // Add fade-out class to all elements
+  const runFadeOutAnimation = () => {
     document.querySelector('.auth-container').classList.add('fade-out');
     document.querySelector('.auth-form-wrapper').classList.add('fade-out');
     document.querySelector('.logo-section').classList.add('fade-out');
@@ -38,20 +45,16 @@ const Login = () => {
     document.querySelector('.role-label').classList.add('fade-out');
     document.querySelector('.role-options').classList.add('fade-out');
     
-    // Add fade-out to form groups
     const formGroups = document.querySelectorAll('.form-group');
     formGroups.forEach(group => group.classList.add('fade-out'));
-    
-    // Add fade-out to login button
     document.querySelector('.login-button').classList.add('fade-out');
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
     
-    // Wait for transition to complete before submitting
-    setTimeout(() => {
-        // Your login logic here
-        console.log('Login submitted after fade animation');
-    }, 500); // Match this with your CSS transition duration
     if (!form.email || !form.password) {
-      alert('Please fill in all fields');
+      showNotification('Please fill in all fields', 'error');
       return;
     }
 
@@ -62,20 +65,16 @@ const Login = () => {
       password: form.password
     };
 
-    console.log('Attempting to login:', { username: form.email, role: form.role });
-
     try {
-      // Test backend connection first
       try {
         await axios.get('http://localhost:8080/api/users/test');
       } catch (testError) {
         console.error('Backend connection failed:', testError);
-        alert('Cannot connect to server. Please make sure the backend is running on port 8080.');
+        showNotification('Cannot connect to server. Please make sure the backend is running on port 8080.', 'error');
         setIsLoading(false);
         return;
       }
 
-      // Attempt login
       const response = await axios.post('http://localhost:8080/api/users/login', loginData, {
         headers: {
           'Content-Type': 'application/json',
@@ -83,60 +82,54 @@ const Login = () => {
         timeout: 10000
       });
       
-      console.log('Login response:', response);
-      
       if (response.status === 200) {
         const userData = response.data.user;
         
-        // Check if the selected role matches the user's actual role
         if (form.role === 'admin' && userData.role !== 'ADMIN') {
-          alert('You do not have admin privileges. Please select Customer role.');
+          showNotification('You do not have admin privileges. Please select Customer role.', 'error');
           setIsLoading(false);
           return;
         }
 
         if (form.role === 'customer' && userData.role === 'ADMIN') {
-          alert('You are logging in as an admin account. Please select Admin role.');
+          showNotification('You are logging in as an admin account. Please select Admin role.', 'error');
           setIsLoading(false);
           return;
         }
         
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('isLoggedIn', 'true');
+        runFadeOutAnimation();
         
-        alert('Login successful! Welcome back, ' + userData.firstName + '!');
-        
-        // Redirect based on role
-        if (userData.role === 'ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/customer');
-        }
+        setTimeout(() => {
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('isLoggedIn', 'true');
+          showNotification(`Welcome back, ${userData.firstName}!`, 'success');
+          
+          if (userData.role === 'ADMIN') {
+            navigate('/admin');
+          } else {
+            navigate('/customer');
+          }
+        }, 500);
       }
     } catch (error) {
       console.error('Login error:', error);
       
       if (error.response) {
-        // Server responded with error status
         const errorMessage = error.response.data?.error || error.response.data?.message || 'Login failed';
         
         if (error.response.status === 401) {
-          alert('Invalid email or password. Please try again.');
+          showNotification('Invalid email or password. Please try again.', 'error');
         } else {
-          alert(`Login failed: ${errorMessage}`);
+          showNotification(`Login failed: ${errorMessage}`, 'error');
         }
       } else if (error.request) {
-        // Request was made but no response received
-        alert('No response from server. Please check if the backend is running.');
+        showNotification('No response from server. Please check if the backend is running.', 'error');
       } else {
-        // Something else happened
-        alert(`Login failed: ${error.message}`);
+        showNotification(`Login failed: ${error.message}`, 'error');
       }
     } finally {
       setIsLoading(false);
     }
-    
   };
 
   const handleBackToHome = () => {
@@ -149,6 +142,14 @@ const Login = () => {
 
   return (
     <div className="auth-container">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
+      
       <div className="auth-form-wrapper">
         <form className="auth-form" onSubmit={handleLogin}>
           {/* Back button */}
@@ -163,7 +164,7 @@ const Login = () => {
             </svg>
           </button>
 
-          {/* Logo section inside the form */}
+          {/* Logo section */}
           <div className="logo-section">
             <img src={caffinityLogo} alt="Caffinity Logo" className="logo-icon" />
             <h1 className="app-title">CAFFINITY</h1>

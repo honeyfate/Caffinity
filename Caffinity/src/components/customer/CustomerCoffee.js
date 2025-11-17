@@ -17,18 +17,37 @@ const CustomerCoffee = () => {
     return sessionId;
   };
 
-  // Load cart from localStorage on component mount (fallback)
-  useEffect(() => {
-    const savedCart = localStorage.getItem('coffeeCart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+  // Fetch current cart from database
+  const fetchCart = async () => {
+    try {
+      const sessionId = getSessionId();
+      const response = await axios.get('http://localhost:8080/api/cart', {
+        headers: { 'X-Session-Id': sessionId }
+      });
+      
+      if (response.data && response.data.cartItems) {
+        setCartItems(response.data.cartItems || []);
+      } else if (response.data && Array.isArray(response.data)) {
+        setCartItems(response.data);
+      } else {
+        const savedCart = localStorage.getItem('coffeeCart');
+        if (savedCart) {
+          setCartItems(JSON.parse(savedCart));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+      const savedCart = localStorage.getItem('coffeeCart');
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+      }
     }
-  }, []);
+  };
 
-  // Save cart to localStorage whenever it changes (fallback)
+  // Load cart on component mount
   useEffect(() => {
-    localStorage.setItem('coffeeCart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    fetchCart();
+  }, []);
 
   // Fetch coffee products from backend
   const fetchCoffeeProducts = async () => {
@@ -37,7 +56,6 @@ const CustomerCoffee = () => {
       const response = await axios.get('http://localhost:8080/api/products/coffee');
       console.log('Products fetched:', response.data);
       
-      // Ensure we have proper image URLs
       const productsWithImages = response.data.map(product => ({
         ...product,
         imageUrl: product.imageUrl || getPlaceholderImage(product.name)
@@ -57,62 +75,50 @@ const CustomerCoffee = () => {
     fetchCoffeeProducts();
   }, []);
 
-  // Handle add to cart with database integration
-  const handleAddToCart = async (product) => {
+  // Toggle cart item - add if not present, remove if present
+  const toggleCartItem = async (product) => {
     setIsLoading(true);
     
     try {
       const sessionId = getSessionId();
-      await axios.post('http://localhost:8080/api/cart/add', 
-        { productId: product.id, quantity: 1 },
-        { headers: { 'X-Session-Id': sessionId } }
-      );
-      
-      // Show success message
-      alert(`${product.name} added to cart!`);
-      
-      // Update local state for UI feedback
-      const existingItem = cartItems.find(item => item.id === product.id);
-      if (existingItem) {
-        setCartItems(prevItems => 
-          prevItems.map(item =>
-            item.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        );
+      const isCurrentlyInCart = isInCart(product.id);
+
+      if (isCurrentlyInCart) {
+        // Remove from cart
+        await axios.delete(`http://localhost:8080/api/cart/remove/${product.id}`, {
+          headers: { 'X-Session-Id': sessionId }
+        });
+        alert(`${product.name} removed from cart!`);
       } else {
-        const newItem = {
-          ...product,
-          quantity: 1,
-          addedAt: new Date().toISOString()
-        };
-        setCartItems(prevItems => [...prevItems, newItem]);
+        // Add to cart
+        await axios.post('http://localhost:8080/api/cart/add', 
+          { productId: product.id, quantity: 1 },
+          { headers: { 'X-Session-Id': sessionId } }
+        );
+        alert(`${product.name} added to cart!`);
       }
+      
+      // Refresh cart data
+      await fetchCart();
     } catch (error) {
-      console.error('Error adding to cart:', error);
-      // Fallback to localStorage if API fails
-      const existingItem = cartItems.find(item => item.id === product.id);
+      console.error('Error toggling cart item:', error);
+      // Fallback to localStorage
+      const savedCart = localStorage.getItem('coffeeCart') || '[]';
+      let cartItems = JSON.parse(savedCart);
+      const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
       
-      if (existingItem) {
-        setCartItems(prevItems => 
-          prevItems.map(item =>
-            item.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        );
+      if (existingItemIndex > -1) {
+        // Remove from cart
+        cartItems.splice(existingItemIndex, 1);
+        alert(`${product.name} removed from cart!`);
       } else {
-        const newItem = {
-          ...product,
-          quantity: 1,
-          addedAt: new Date().toISOString()
-        };
-        setCartItems(prevItems => [...prevItems, newItem]);
+        // Add to cart
+        cartItems.push({ ...product, quantity: 1 });
+        alert(`${product.name} added to cart!`);
       }
       
-      // Show success message
-      alert(`${product.name} added to cart!`);
+      localStorage.setItem('coffeeCart', JSON.stringify(cartItems));
+      setCartItems(cartItems);
     } finally {
       setIsLoading(false);
     }
@@ -120,7 +126,9 @@ const CustomerCoffee = () => {
 
   // Handle buy now (add to cart and redirect to cart page)
   const handleBuyNow = async (product) => {
-    await handleAddToCart(product);
+    if (!isInCart(product.id)) {
+      await toggleCartItem(product);
+    }
     // Redirect to cart page after a short delay
     setTimeout(() => {
       window.location.href = '/customer-cart';
@@ -129,20 +137,20 @@ const CustomerCoffee = () => {
 
   // Check if product is in cart
   const isInCart = (productId) => {
-    return cartItems.some(item => item.id === productId);
+    return cartItems.some(item => {
+      const itemProductId = item.product?.id || item.id;
+      return itemProductId === productId;
+    });
   };
 
   // Get image source for product
   const getProductImage = (product) => {
     if (product.imageUrl) {
-      // If it's already a full URL, use it directly
       if (product.imageUrl.startsWith('http')) {
         return product.imageUrl;
       }
-      // If it's a relative path, make it absolute
       return `http://localhost:8080${product.imageUrl}`;
     }
-    // Fallback to placeholder if no image URL
     return getPlaceholderImage(product.name);
   };
 
@@ -183,23 +191,26 @@ const CustomerCoffee = () => {
                 <p className="product-description">{product.description}</p>
                 <div className="product-price">₱{parseFloat(product.price).toFixed(2)}</div>
                 
-                {/* Action Buttons - Reversed order */}
+                {/* Action Buttons */}
                 <div className="product-actions">
                   <button 
                     className={`add-to-cart-btn ${isInCart(product.id) ? 'in-cart' : ''}`}
-                    onClick={() => handleAddToCart(product)}
+                    onClick={() => toggleCartItem(product)}
                     disabled={isLoading}
-                    title={isInCart(product.id) ? 'Added to Cart' : 'Add to Cart'}
+                    title={isInCart(product.id) ? 'Remove from Cart' : 'Add to Cart'}
                   >
-                    <span className="cart-icon">🛒</span>
-                    <span className="check-icon">✓</span>
+                    {isInCart(product.id) ? (
+                      <span className="check-icon">✓</span>
+                    ) : (
+                      <span className="cart-icon">🛒</span>
+                    )}
                   </button>
                   <button 
                     className="order-now-btn"
                     onClick={() => handleBuyNow(product)}
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Adding...' : 'Order Now'}
+                    {isLoading ? '...' : 'Order Now'}
                   </button>
                 </div>
               </div>

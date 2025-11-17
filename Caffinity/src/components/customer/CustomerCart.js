@@ -25,15 +25,13 @@ const CustomerCart = () => {
         headers: { 'X-Session-Id': sessionId }
       });
       
-      console.log('Cart API Response:', response.data); // Debug log
+      console.log('Cart API Response:', response.data);
       
-      // Handle both database response structure and localStorage fallback
       if (response.data && response.data.cartItems) {
         setCartItems(response.data.cartItems || []);
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
-        // Fallback to localStorage
         const savedCart = localStorage.getItem('coffeeCart');
         if (savedCart) {
           setCartItems(JSON.parse(savedCart));
@@ -43,7 +41,6 @@ const CustomerCart = () => {
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // Fallback to localStorage if API fails
       const savedCart = localStorage.getItem('coffeeCart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
@@ -59,13 +56,11 @@ const CustomerCart = () => {
 
   // Safe function to get item name
   const getItemName = (item) => {
-    // Handle both database structure (item.product.name) and localStorage structure (item.name)
     return item.product?.name || item.name || 'Unknown Product';
   };
 
   // Safe function to get item price
   const getItemPrice = (item) => {
-    // Handle both database structure (item.price) and localStorage structure (item.price as string)
     if (typeof item.price === 'number') {
       return item.price;
     } else if (typeof item.price === 'string') {
@@ -84,22 +79,33 @@ const CustomerCart = () => {
     return item.product?.id || item.id;
   };
 
+  // Safe function to get product image
+  const getProductImage = (item) => {
+    const imageUrl = item.product?.imageUrl || item.imageUrl;
+    if (imageUrl) {
+      if (imageUrl.startsWith('http')) {
+        return imageUrl;
+      }
+      return `http://localhost:8080${imageUrl}`;
+    }
+    // Fallback placeholder image
+    return `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
+  };
+
   // Update quantity in database
   const updateQuantity = async (productId, newQuantity) => {
     try {
       const sessionId = getSessionId();
       
       if (newQuantity === 0) {
-        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers: { 'X-Session-Id': sessionId }
-        });
+        await removeFromCart(productId);
       } else {
         await axios.put('http://localhost:8080/api/cart/update', 
           { productId, quantity: newQuantity },
           { headers: { 'X-Session-Id': sessionId } }
         );
+        fetchCart(); // Refresh cart data
       }
-      fetchCart(); // Refresh cart data
     } catch (error) {
       console.error('Error updating cart:', error);
       // Fallback to localStorage update
@@ -112,6 +118,21 @@ const CustomerCart = () => {
           );
         }
       });
+    }
+  };
+
+  // Remove item from cart completely
+  const removeFromCart = async (productId) => {
+    try {
+      const sessionId = getSessionId();
+      await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+        headers: { 'X-Session-Id': sessionId }
+      });
+      fetchCart(); // Refresh cart data
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      // Fallback to localStorage
+      setCartItems(prevItems => prevItems.filter(item => getProductId(item) !== productId));
     }
   };
 
@@ -134,9 +155,7 @@ const CustomerCart = () => {
     
     try {
       setIsLoading(true);
-      // Here you can implement checkout logic
       alert('Proceeding to checkout!');
-      // After successful checkout, clear the cart
       const sessionId = getSessionId();
       await axios.delete('http://localhost:8080/api/cart/clear', {
         headers: { 'X-Session-Id': sessionId }
@@ -199,35 +218,59 @@ const CustomerCart = () => {
                   </button>
                 </div>
               ) : (
-                cartItems.map(item => (
-                  <div key={item.id || getProductId(item)} className="cart-item-detail">
-                    <div className="item-info">
-                      <h4>{getItemName(item)}</h4>
-                      <p>₱{getItemPrice(item).toFixed(2)} each</p>
-                      {getItemCategory(item) && <small>Category: {getItemCategory(item)}</small>}
+                <div className="cart-items-list">
+                  {cartItems.map(item => (
+                    <div key={item.id || getProductId(item)} className="cart-item-card">
+                      <div className="cart-item-image">
+                        <img 
+                          src={getProductImage(item)} 
+                          alt={getItemName(item)}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
+                          }}
+                        />
+                      </div>
+                      <div className="cart-item-details">
+                        <div className="item-info">
+                          <h4>{getItemName(item)}</h4>
+                          <p className="item-price">₱{getItemPrice(item).toFixed(2)} each</p>
+                          {getItemCategory(item) && <small className="item-category">Category: {getItemCategory(item)}</small>}
+                        </div>
+                        <div className="item-controls">
+                          <div className="quantity-controls">
+                            <button 
+                              onClick={() => updateQuantity(getProductId(item), item.quantity - 1)}
+                              className="quantity-btn"
+                              disabled={isLoading}
+                            >
+                              -
+                            </button>
+                            <span className="quantity">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(getProductId(item), item.quantity + 1)}
+                              className="quantity-btn"
+                              disabled={isLoading}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button 
+                            className="delete-btn"
+                            onClick={() => removeFromCart(getProductId(item))}
+                            disabled={isLoading}
+                            title="Remove item"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                      <div className="item-total">
+                        ₱{(getItemPrice(item) * item.quantity).toFixed(2)}
+                      </div>
                     </div>
-                    <div className="quantity-controls">
-                      <button 
-                        onClick={() => updateQuantity(getProductId(item), item.quantity - 1)}
-                        className="quantity-btn"
-                        disabled={isLoading}
-                      >
-                        -
-                      </button>
-                      <span className="quantity">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(getProductId(item), item.quantity + 1)}
-                        className="quantity-btn"
-                        disabled={isLoading}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="item-total">
-                      ₱{(getItemPrice(item) * item.quantity).toFixed(2)}
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>

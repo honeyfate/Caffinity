@@ -354,29 +354,57 @@
   position: relative;
   z-index: 2;
   justify-content: center;
+  width: 100%;
 }
 
 .edit-btn {
   background: linear-gradient(135deg, #2c1a0a, #4a2c1a);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.95rem;
   flex: 1;
-  max-width: 120px;
+  min-width: 100px;
+  max-width: 140px;
   transition: all 0.3s ease;
   font-weight: 600;
   font-family: 'Segoe UI', sans-serif;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .edit-btn:hover {
   background: linear-gradient(135deg, #4a2c1a, #2c1a0a);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(44, 26, 10, 0.3);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  flex: 1;
+  min-width: 100px;
+  max-width: 140px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.delete-btn:hover {
+  background: linear-gradient(135deg, #c82333, #dc3545);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.3);
 }
 
 .delete-btn {

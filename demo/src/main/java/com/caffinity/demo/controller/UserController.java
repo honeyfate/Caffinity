@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -175,6 +176,8 @@ public class UserController {
         userResponse.put("phoneNumber", user.getPhoneNumber());
         userResponse.put("loginStatus", user.getLoginStatus());
         userResponse.put("role", user.getRole().toString());
+        userResponse.put("profilePicture", user.getProfilePicture());
+        // Note: Password is intentionally excluded for security
         return userResponse;
     }
 
@@ -230,4 +233,296 @@ public class UserController {
                     .body("Error retrieving users: " + e.getMessage());
         }
     }
+
+    // Get admin profile - UPDATED WITH DEBUG LOGGING
+    @GetMapping("/admin/profile/{id}")
+    public ResponseEntity<?> getAdminProfile(@PathVariable Long id) {
+        try {
+            System.out.println("🔍 Fetching admin profile for ID: " + id);
+            User admin = userService.getAdminProfile(id);
+            
+            // Debug logging
+            System.out.println("✅ Admin found: " + admin.getFirstName() + " " + admin.getLastName());
+            System.out.println("📸 Profile picture in database: " + 
+                (admin.getProfilePicture() != null ? 
+                 admin.getProfilePicture().length() + " characters" : "null"));
+            
+            Map<String, Object> response = createUserResponse(admin);
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            System.err.println("❌ Error fetching admin profile: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error fetching admin profile: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error retrieving admin profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // Update admin profile - UPDATED WITH PROFILE PICTURE HANDLING
+    @PutMapping("/admin/profile/{id}")
+    public ResponseEntity<?> updateAdminProfile(
+        @PathVariable Long id,
+        @RequestBody Map<String, Object> profileUpdate) {
+        
+        try {
+            System.out.println("🔄 Updating admin profile for ID: " + id);
+            
+            // Extract fields with null safety
+            String firstName = (String) profileUpdate.get("firstName");
+            String lastName = (String) profileUpdate.get("lastName");
+            String email = (String) profileUpdate.get("email");
+            String username = (String) profileUpdate.get("username");
+            String phoneNumber = (String) profileUpdate.get("phoneNumber");
+            String profilePicture = (String) profileUpdate.get("profilePicture");
+
+            // Debug logging for profile picture
+            System.out.println("📸 Received profile picture data: " + 
+                (profilePicture != null ? profilePicture.length() + " characters" : "null"));
+            
+            if (profilePicture != null && profilePicture.length() > 100) {
+                System.out.println("📸 Profile picture preview: " + profilePicture.substring(0, 50) + "...");
+            }
+
+            User updatedAdmin = userService.updateUserProfile(id, firstName, lastName, email, username, phoneNumber, profilePicture);
+            
+            System.out.println("✅ Profile updated successfully");
+            System.out.println("📸 Saved profile picture length: " + 
+                (updatedAdmin.getProfilePicture() != null ? 
+                 updatedAdmin.getProfilePicture().length() + " characters" : "null"));
+            
+            return ResponseEntity.ok(createUserResponse(updatedAdmin));
+            
+        } catch (RuntimeException e) {
+            System.err.println("❌ Error updating admin profile: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error updating admin profile: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error updating profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // Change password
+    @PutMapping("/admin/change-password/{id}")
+    public ResponseEntity<?> changeAdminPassword(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> passwordUpdate) {
+        
+        try {
+            String currentPassword = passwordUpdate.get("currentPassword");
+            String newPassword = passwordUpdate.get("newPassword");
+
+            if (currentPassword == null || newPassword == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Current password and new password are required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+
+            User updatedAdmin = userService.changeUserPassword(id, currentPassword, newPassword);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Password updated successfully");
+            response.put("user", createUserResponse(updatedAdmin));
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error changing password: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // NEW ENDPOINT: Update only profile picture
+    @PutMapping("/admin/profile/{id}/picture")
+    public ResponseEntity<?> updateAdminProfilePicture(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> pictureUpdate) {
+        
+        try {
+            System.out.println("🖼️ Updating profile picture for admin ID: " + id);
+            
+            String profilePicture = pictureUpdate.get("profilePicture");
+            
+            System.out.println("📸 Received profile picture length: " + 
+                (profilePicture != null ? profilePicture.length() + " characters" : "null"));
+
+            User updatedAdmin = userService.updateUserProfilePicture(id, profilePicture);
+            
+            System.out.println("✅ Profile picture updated successfully");
+            System.out.println("📸 New profile picture length: " + 
+                (updatedAdmin.getProfilePicture() != null ? 
+                 updatedAdmin.getProfilePicture().length() + " characters" : "null"));
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Profile picture updated successfully");
+            response.put("user", createUserResponse(updatedAdmin));
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            System.err.println("❌ Error updating profile picture: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error updating profile picture: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error updating profile picture: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+// Get customer profile
+@GetMapping("/customer/profile/{id}")
+public ResponseEntity<?> getCustomerProfile(@PathVariable Long id) {
+    try {
+        System.out.println("🔍 Fetching customer profile for ID: " + id);
+        User customer = userService.getCustomerProfile(id);
+        
+        // Debug logging
+        System.out.println("✅ Customer found: " + customer.getFirstName() + " " + customer.getLastName());
+        
+        Map<String, Object> response = createUserResponse(customer);
+        return ResponseEntity.ok(response);
+        
+    } catch (RuntimeException e) {
+        System.err.println("❌ Error fetching customer profile: " + e.getMessage());
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    } catch (Exception e) {
+        System.err.println("❌ Unexpected error fetching customer profile: " + e.getMessage());
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Error retrieving customer profile: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+}
+
+// Update customer profile
+@PutMapping("/customer/profile/{id}")
+public ResponseEntity<?> updateCustomerProfile(
+    @PathVariable Long id,
+    @RequestBody Map<String, Object> profileUpdate) {
+    
+    try {
+        System.out.println("🔄 Updating customer profile for ID: " + id);
+        
+        // Extract fields with null safety
+        String firstName = (String) profileUpdate.get("firstName");
+        String lastName = (String) profileUpdate.get("lastName");
+        String email = (String) profileUpdate.get("email");
+        String username = (String) profileUpdate.get("username");
+        String phoneNumber = (String) profileUpdate.get("phoneNumber");
+        String profilePicture = (String) profileUpdate.get("profilePicture");
+
+        // Debug logging
+        System.out.println("📧 Updating email to: " + email);
+        System.out.println("📞 Updating phone to: " + phoneNumber);
+        
+        User updatedCustomer = userService.updateUserProfile(id, firstName, lastName, email, username, phoneNumber, profilePicture);
+        
+        System.out.println("✅ Customer profile updated successfully");
+        
+        return ResponseEntity.ok(createUserResponse(updatedCustomer));
+        
+    } catch (RuntimeException e) {
+        System.err.println("❌ Error updating customer profile: " + e.getMessage());
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    } catch (Exception e) {
+        System.err.println("❌ Unexpected error updating customer profile: " + e.getMessage());
+        e.printStackTrace();
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Error updating profile: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+}
+
+// Update customer profile picture only
+@PutMapping("/customer/profile/{id}/picture")
+public ResponseEntity<?> updateCustomerProfilePicture(
+    @PathVariable Long id,
+    @RequestBody Map<String, String> pictureUpdate) {
+    
+    try {
+        System.out.println("🖼️ Updating profile picture for customer ID: " + id);
+        
+        String profilePicture = pictureUpdate.get("profilePicture");
+        
+        System.out.println("📸 Received profile picture length: " + 
+            (profilePicture != null ? profilePicture.length() + " characters" : "null"));
+
+        User updatedCustomer = userService.updateUserProfilePicture(id, profilePicture);
+        
+        System.out.println("✅ Profile picture updated successfully");
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Profile picture updated successfully");
+        response.put("user", createUserResponse(updatedCustomer));
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (RuntimeException e) {
+        System.err.println("❌ Error updating profile picture: " + e.getMessage());
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    } catch (Exception e) {
+        System.err.println("❌ Unexpected error updating profile picture: " + e.getMessage());
+        e.printStackTrace();
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Error updating profile picture: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+}
+
+// Change customer password
+@PutMapping("/customer/change-password/{id}")
+public ResponseEntity<?> changeCustomerPassword(
+    @PathVariable Long id,
+    @RequestBody Map<String, String> passwordUpdate) {
+    
+    try {
+        String currentPassword = passwordUpdate.get("currentPassword");
+        String newPassword = passwordUpdate.get("newPassword");
+
+        if (currentPassword == null || newPassword == null) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Current password and new password are required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        User updatedCustomer = userService.changeUserPassword(id, currentPassword, newPassword);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Password updated successfully");
+        response.put("user", createUserResponse(updatedCustomer));
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (RuntimeException e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    } catch (Exception e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Error changing password: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+}
 }

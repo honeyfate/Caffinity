@@ -135,4 +135,109 @@ public class UserService {
         Optional<User> userOpt = userRepository.findById(userId);
         return userOpt.isPresent() && userOpt.get().getRole() == UserRole.ADMIN;
     }
+
+    // Update user profile with all fields including profile picture
+    // In UserService.java - Update the updateUserProfile method
+public User updateUserProfile(Long id, String firstName, String lastName, 
+                             String email, String username, String phoneNumber, 
+                             String profilePicture) {
+    Optional<User> userOpt = userRepository.findById(id);
+    if (userOpt.isPresent()) {
+        User user = userOpt.get();
+        
+        // Update basic fields
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            user.setFirstName(firstName);
+        }
+        if (lastName != null && !lastName.trim().isEmpty()) {
+            user.setLastName(lastName);
+        }
+        if (email != null && !email.trim().isEmpty()) {
+            // Check if email is already taken by another user
+            Optional<User> existingUser = userRepository.findByEmail(email);
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(id)) {
+                throw new RuntimeException("Email already taken by another user");
+            }
+            user.setEmail(email);
+        }
+        if (username != null && !username.trim().isEmpty()) {
+            // Check if username is already taken by another user
+            Optional<User> existingUser = userRepository.findByUsername(username);
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(id)) {
+                throw new RuntimeException("Username already taken by another user");
+            }
+            user.setUsername(username);
+        }
+        if (phoneNumber != null) {
+            user.setPhoneNumber(phoneNumber);
+        }
+        
+        // Update profile picture
+        if (profilePicture != null) {
+            user.setProfilePicture(profilePicture);
+        }
+        
+        return userRepository.save(user);
+    }
+    throw new RuntimeException("User not found");
+}
+
+    // Change user password
+    public User changeUserPassword(Long id, String currentPassword, String newPassword) {
+    Optional<User> userOpt = userRepository.findById(id);
+    if (userOpt.isPresent()) {
+        User user = userOpt.get();
+        // Verify current password
+        if (!user.getPassword().equals(currentPassword)) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+        user.setPassword(newPassword);
+        return userRepository.save(user);
+    }
+    throw new RuntimeException("User not found");
+}
+
+    // Get admin profile
+  public User getAdminProfile(Long id) {
+    User admin = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Admin not found with id: " + id));
+    
+    // Optional: Add admin role validation
+    if (admin.getRole() != UserRole.ADMIN) {
+        throw new RuntimeException("User is not an admin");
+    }
+    
+    return admin;
+}
+
+    // In UserService.java - Add these methods if not present
+
+public User updateUserProfilePicture(Long id, String profilePicture) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+    
+    System.out.println("🖼️ Updating profile picture for user: " + user.getUsername());
+    System.out.println("📸 New picture length: " + (profilePicture != null ? profilePicture.length() : "null"));
+    
+    user.setProfilePicture(profilePicture);
+    
+    User savedUser = userRepository.save(user);
+    System.out.println("✅ Profile picture saved successfully");
+    
+    return savedUser;
+}
+
+// Get customer profile
+public User getCustomerProfile(Long id) {
+    User customer = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+    
+    // Optional: Add customer role validation if needed
+    // if (customer.getRole() != UserRole.CUSTOMER) {
+    //     throw new RuntimeException("User is not a customer");
+    // }
+    
+    return customer;
+}
+
 }

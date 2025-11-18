@@ -1,30 +1,56 @@
-import React from 'react';
+// components/customer/CustomerHome.js (UPDATED VERSION)
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import cafeHomeBg from '../../images/cafe-home-bg.jpeg';
 import '../css/CustomerHome.css';
 
 const CustomerHome = () => {
   const navigate = useNavigate();
-
-  // Sample data for demonstration
-  const userStats = {
-    totalOrders: 12,
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [userStats, setUserStats] = useState({
+    totalOrders: 0,
     favoriteItems: 5,
     loyaltyPoints: 450,
     daysAsMember: 45
-  };
-
-  const recentOrders = [
-    { id: 1, item: 'Cappuccino', price: '₱125.00', date: '2024-01-15', status: 'Completed' },
-    { id: 2, item: 'Tiramisu', price: '₱180.00', date: '2024-01-14', status: 'Completed' },
-    { id: 3, item: 'Latte', price: '₱130.00', date: '2024-01-13', status: 'Completed' }
-  ];
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   const featuredItems = [
     { id: 1, name: 'Seasonal Special', description: 'Winter Spice Latte', price: '₱160.00', type: 'coffee' },
     { id: 2, name: 'New Arrival', description: 'Red Velvet Cake', price: '₱195.00', type: 'dessert' },
     { id: 3, name: 'Customer Favorite', description: 'Caramel Macchiato', price: '₱170.00', type: 'coffee' }
   ];
+
+  // Fetch user orders from API
+  useEffect(() => {
+    const fetchUserOrders = async () => {
+      try {
+        setIsLoading(true);
+        // Get current user ID (you might want to get this from auth context)
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id || 1; // Fallback to 1 for demo
+
+        const response = await axios.get(`http://localhost:8080/api/orders/user/${userId}`);
+        
+        if (response.data && Array.isArray(response.data)) {
+          setRecentOrders(response.data.slice(0, 3)); // Show only 3 most recent
+          setUserStats(prev => ({
+            ...prev,
+            totalOrders: response.data.length
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user orders:', error);
+        // Fallback to empty array
+        setRecentOrders([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserOrders();
+  }, []);
 
   const handleExploreCoffee = () => {
     navigate('/customer/coffee');
@@ -34,17 +60,34 @@ const CustomerHome = () => {
     navigate('/customer/desserts');
   };
 
+  const formatOrderDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getOrderStatusBadge = (status) => {
+    const statusClass = {
+      'COMPLETED': 'status-active',
+      'PENDING': 'status-pending',
+      'CONFIRMED': 'status-active',
+      'PREPARING': 'status-pending',
+      'READY': 'status-active',
+      'CANCELLED': 'status-cancelled'
+    }[status] || 'status-pending';
+
+    return `status-badge ${statusClass}`;
+  };
+
   return (
     <div className="customer-home">
-      {/* HERO SECTION - EXACT COPY FROM LANDING PAGE */}
+      {/* HERO SECTION */}
       <section
         id="home"
         className="section home-section"
         style={{ 
           backgroundImage: `url(${cafeHomeBg})`,
-            backgroundSize: 'cover',
-            marginTop: '-60px',
-            marginLeft: '-60px',
+          backgroundSize: 'cover',
+          marginTop: '-60px',
+          marginLeft: '-60px',
         }}
       >
         <div className="home-content">
@@ -168,20 +211,29 @@ const CustomerHome = () => {
               <h3 className="card-title">Recent Orders</h3>
             </div>
             <div className="card-content">
-              {recentOrders.map(order => (
-                <div key={order.id} className="order-item">
-                  <div className="order-info">
-                    <div className="order-name">{order.item}</div>
-                    <div className="order-date">{order.date}</div>
-                  </div>
-                  <div className="order-details">
-                    <div className="order-price">{order.price}</div>
-                    <span className={`status-badge ${order.status === 'Completed' ? 'status-active' : 'status-pending'}`}>
-                      {order.status}
-                    </span>
-                  </div>
+              {isLoading ? (
+                <div className="loading">Loading orders...</div>
+              ) : recentOrders.length === 0 ? (
+                <div className="empty-orders">
+                  <p>No orders yet</p>
+                  <Link to="/customer/coffee" className="card-btn small">Start Shopping</Link>
                 </div>
-              ))}
+              ) : (
+                recentOrders.map(order => (
+                  <div key={order.id} className="order-item">
+                    <div className="order-info">
+                      <div className="order-name">Order #{order.id}</div>
+                      <div className="order-date">{formatOrderDate(order.orderDate)}</div>
+                    </div>
+                    <div className="order-details">
+                      <div className="order-price">₱{order.totalAmount?.toFixed(2)}</div>
+                      <span className={getOrderStatusBadge(order.status)}>
+                        {order.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="card-actions">
               <button className="card-btn secondary">View All Orders</button>

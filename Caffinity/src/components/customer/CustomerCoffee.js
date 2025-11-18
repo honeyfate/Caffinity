@@ -144,7 +144,7 @@ const CustomerCoffee = () => {
     }
     // Redirect to cart page after a short delay
     setTimeout(() => {
-      window.location.href = '/customer-cart';
+      window.location.href = '/customer/cart';
     }, 600);
   };
 

@@ -431,8 +431,8 @@ const CustomerProfile = () => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+                    },
+                    body: JSON.stringify({
                     ...user,
                     profilePicture: ''
                 }),
@@ -675,7 +675,6 @@ const CustomerProfile = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label htmlFor="firstName">
-                                                <FaUser className="label-icon" />
                                                 First Name
                                             </label>
                                             <div className="input-wrapper">
@@ -692,7 +691,6 @@ const CustomerProfile = () => {
                                         </div>
                                         <div className="form-group">
                                             <label htmlFor="lastName">
-                                                <FaUser className="label-icon" />
                                                 Last Name
                                             </label>
                                             <div className="input-wrapper">
@@ -711,7 +709,6 @@ const CustomerProfile = () => {
                                     
                                     <div className="form-group">
                                         <label htmlFor="username">
-                                            <FaAt className="label-icon" />
                                             Username
                                         </label>
                                         <div className="input-wrapper">
@@ -729,7 +726,6 @@ const CustomerProfile = () => {
 
                                     <div className="form-group">
                                         <label htmlFor="email">
-                                            <FaEnvelope className="label-icon" />
                                             Email
                                         </label>
                                         <div className="input-wrapper">
@@ -747,7 +743,6 @@ const CustomerProfile = () => {
 
                                     <div className="form-group">
                                         <label htmlFor="phoneNumber">
-                                            <FaPhone className="label-icon" />
                                             Phone Number
                                         </label>
                                         <div className="input-wrapper">
@@ -784,7 +779,6 @@ const CustomerProfile = () => {
                                 <form onSubmit={handlePasswordUpdate} className="password-form">
                                     <div className="form-group">
                                         <label htmlFor="currentPassword">
-                                            <FaLock className="label-icon" />
                                             Current Password
                                         </label>
                                         <div className="input-wrapper">
@@ -802,7 +796,6 @@ const CustomerProfile = () => {
 
                                     <div className="form-group">
                                         <label htmlFor="newPassword">
-                                            <FaKey className="label-icon" />
                                             New Password
                                         </label>
                                         <div className="input-wrapper">
@@ -821,7 +814,6 @@ const CustomerProfile = () => {
 
                                     <div className="form-group">
                                         <label htmlFor="confirmPassword">
-                                            <FaKey className="label-icon" />
                                             Confirm New Password
                                         </label>
                                         <div className="input-wrapper">

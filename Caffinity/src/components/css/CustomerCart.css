@@ -746,3 +746,814 @@
     width: 100%;
   }
 }
+/* PROGRESS BAR */
+.progress-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 30px auto 50px;
+  max-width: 700px;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #c7a17a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background: #fff;
+  color: #c7a17a;
+  transition: 0.3s;
+}
+
+.circle.active {
+  background: #c7a17a;
+  color: white;
+  border-color: #a88460;
+}
+
+.progress-line {
+  flex: 1;
+  height: 4px;
+  background: #c7a17a;
+  margin: 0 10px;
+  opacity: 0.4;
+}
+
+.progress-step span {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #5a4636;
+}
+/* Centered Layout for Steps 2, 3, 4 */
+.centered-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 400px;
+}
+
+.centered-step-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.centered-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Cart Layout for Step 1 */
+.cart-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+/* Form Styles for Centered Cards */
+.checkout-form {
+  width: 100%;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section-title {
+  font-size: 1.2rem;
+  color: #2c1a0a;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f0e6d6;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #2c1a0a;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-icon {
+  color: #8b4513;
+  font-size: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #8b4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Payment Section Styles */
+.payment-section {
+  margin-bottom: 2rem;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+}
+
+.payment-option input[type="radio"] {
+  margin-right: 1rem;
+  accent-color: #8b4513;
+}
+
+.payment-option label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  font-weight: 600;
+  color: #2c1a0a;
+}
+
+.payment-option label:hover {
+  border-color: #c7a17a;
+}
+
+.payment-option input[type="radio"]:checked + label {
+  border-color: #8b4513;
+  background: #f8f5f2;
+}
+
+.payment-icon {
+  color: #8b4513;
+  font-size: 1.2rem;
+}
+
+.card-details-section {
+  margin-top: 2rem;
+}
+
+/* Confirmation Message */
+.confirmation-message {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background: #28a745;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  font-size: 2rem;
+}
+
+.confirmation-message h3 {
+  color: #2c1a0a;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.confirmation-message p {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.order-details {
+  background: #f8f5f2;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #8b4513;
+}
+
+.order-details p {
+  margin: 0;
+  color: #2c1a0a;
+  font-size: 1rem;
+}
+
+/* Responsive Design for Centered Layout */
+@media (max-width: 768px) {
+  .centered-card {
+    max-width: 100%;
+    margin: 0 15px;
+  }
+  
+  .cart-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .payment-option label {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .centered-card {
+    margin: 0 10px;
+  }
+  
+  .form-section-title {
+    font-size: 1.1rem;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+  }
+  
+  .form-input {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+}
+/* Back Button Styles */
+.card-header.with-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  position: relative;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8f5f2;
+  border: 2px solid #e8d5b5;
+  color: #8b4513;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.back-button:hover:not(:disabled) {
+  background: #f0e6d6;
+  border-color: #d4b896;
+  transform: translateY(-1px);
+}
+
+.back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.back-icon {
+  font-size: 0.8rem;
+}
+
+.centered-title {
+  text-align: center;
+  flex: 1;
+  margin: 0;
+  color: #2c1a0a;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.header-spacer {
+  width: 100px; /* Same width as back button for proper centering */
+  visibility: hidden;
+}
+
+/* Card Header Adjustments for Back Button */
+.card-header:not(.with-back-button) {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* Centered Layout for Steps 2, 3, 4 */
+.centered-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 400px;
+}
+
+.centered-step-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.centered-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Cart Layout for Step 1 */
+.cart-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+/* Form Styles for Centered Cards */
+.checkout-form {
+  width: 100%;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section-title {
+  font-size: 1.2rem;
+  color: #2c1a0a;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f0e6d6;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #2c1a0a;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-icon {
+  color: #8b4513;
+  font-size: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #8b4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Payment Section Styles */
+.payment-section {
+  margin-bottom: 2rem;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+}
+
+.payment-option input[type="radio"] {
+  margin-right: 1rem;
+  accent-color: #8b4513;
+}
+
+.payment-option label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  font-weight: 600;
+  color: #2c1a0a;
+}
+
+.payment-option label:hover {
+  border-color: #c7a17a;
+}
+
+.payment-option input[type="radio"]:checked + label {
+  border-color: #8b4513;
+  background: #f8f5f2;
+}
+
+.payment-icon {
+  color: #8b4513;
+  font-size: 1.2rem;
+}
+
+.card-details-section {
+  margin-top: 2rem;
+}
+
+/* Confirmation Message */
+.confirmation-message {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background: #28a745;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  font-size: 2rem;
+}
+
+.confirmation-message h3 {
+  color: #2c1a0a;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.confirmation-message p {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.order-details {
+  background: #f8f5f2;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #8b4513;
+}
+
+.order-details p {
+  margin: 0;
+  color: #2c1a0a;
+  font-size: 1rem;
+}
+
+/* Card Actions */
+.card-actions {
+  padding: 1.5rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-btn {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.card-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a0522d, #8b4513);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
+}
+
+.card-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.card-btn.secondary {
+  background: #666;
+}
+
+.card-btn.secondary:hover:not(:disabled) {
+  background: #555;
+}
+
+/* Responsive Design for Centered Layout */
+@media (max-width: 768px) {
+  .centered-card {
+    max-width: 100%;
+    margin: 0 15px;
+  }
+  
+  .cart-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .payment-option label {
+    padding: 0.75rem;
+  }
+  
+  .card-header.with-back-button {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .back-button {
+    align-self: flex-start;
+  }
+  
+  .header-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .centered-card {
+    margin: 0 10px;
+  }
+  
+  .form-section-title {
+    font-size: 1.1rem;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+  }
+  
+  .form-input {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .back-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* Top Back Button Styles */
+.top-back-button-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 1rem;
+  padding: 0 1rem;
+}
+
+.top-back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 2px solid #8b4513;
+  color: #8b4513;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.top-back-button:hover:not(:disabled) {
+  background: #8b4513;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+.top-back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.top-back-button .back-icon {
+  font-size: 0.9rem;
+}
+
+/* Centered Layout for Steps 2, 3, 4 */
+.centered-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 400px;
+}
+
+.centered-step-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.centered-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Remove old back button styles from card header */
+.card-header.with-back-button {
+  display: block; /* Reset to default */
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.card-header.with-back-button .back-button {
+  display: none; /* Hide the old back button */
+}
+
+.centered-title {
+  text-align: center;
+  margin: 0;
+  color: #2c1a0a;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Keep the existing back button for other steps */
+.card-header.with-back-button:not(.no-back-button) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .top-back-button-container {
+    padding: 0 15px;
+    max-width: 100%;
+  }
+  
+  .centered-card {
+    max-width: 100%;
+    margin: 0 15px;
+  }
+  
+  .top-back-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-back-button-container {
+    padding: 0 10px;
+  }
+  
+  .centered-card {
+    margin: 0 10px;
+  }
+  
+  .top-back-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+/* Add these styles to your CustomerCart.css file */
+
+/* Fix for quantity button blinking */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f8f8f8;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: none !important; /* Remove transitions that cause blinking */
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #8B4513;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: background-color 0.2s ease !important; /* Only transition background color */
+  transform: none !important; /* Remove transform animations */
+}
+
+.quantity-btn:hover:not(:disabled) {
+  background: #6B3410;
+  transform: none !important; /* Remove transform on hover */
+}
+
+.quantity {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+  transition: none !important; /* Remove transitions */
+}
+
+/* Ensure cart items don't blink during updates */
+.cart-item-card {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s ease !important; /* Only transition border color */
+  gap: 1rem;
+  position: relative;
+}
+
+.cart-item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: none !important; /* Remove transform on hover */
+}

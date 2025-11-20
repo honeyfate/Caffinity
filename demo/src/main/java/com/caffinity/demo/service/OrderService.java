@@ -33,14 +33,14 @@ public class OrderService {
     @Autowired
     private CartRepository cartRepository;
 
-    // Create order from cart
+    // Create order from cart - UPDATED
     @Transactional
-    public Order createOrderFromCart(Long userId, String shippingAddress, String customerNotes) {
+    public Order createOrderFromCart(Long userId) {
         System.out.println("🔄 Creating order from cart for user ID: " + userId);
         
         try {
             // Get user
-            User user = userRepository.findById(userId)
+            User user = userRepository.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
             
             // Get user's cart with items
@@ -56,8 +56,6 @@ public class OrderService {
             // Create new order
             Order order = new Order();
             order.setUser(user);
-            order.setShippingAddress(shippingAddress);
-            order.setCustomerNotes(customerNotes);
             order.setStatus(OrderStatus.PENDING);
             
             // Convert cart items to order items
@@ -74,7 +72,7 @@ public class OrderService {
             
             // Save order
             Order savedOrder = orderRepository.save(order);
-            System.out.println("✅ Order created successfully with ID: " + savedOrder.getId());
+            System.out.println("✅ Order created successfully with ID: " + savedOrder.getOrderId());
             
             // Clear cart after successful order creation
             cartRepository.deleteBySessionId(sessionId);
@@ -97,7 +95,7 @@ public class OrderService {
     // Get order by ID
     public Optional<Order> getOrderById(Long id) {
         System.out.println("🔍 Fetching order by ID: " + id);
-        return orderRepository.findById(id);
+        return orderRepository.findByOrderId(id);
     }
 
     // Get order by ID with items
@@ -124,7 +122,7 @@ public class OrderService {
         System.out.println("🔄 Updating order status for ID: " + orderId + " to: " + newStatus);
         
         try {
-            Order order = orderRepository.findById(orderId)
+            Order order = orderRepository.findByOrderId(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
             
             order.setStatus(newStatus);
@@ -145,7 +143,7 @@ public class OrderService {
         System.out.println("🔄 Cancelling order ID: " + orderId);
         
         try {
-            Order order = orderRepository.findById(orderId)
+            Order order = orderRepository.findByOrderId(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
             
             // Only allow cancellation for pending or confirmed orders

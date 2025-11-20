@@ -19,8 +19,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Find orders by user
     List<Order> findByUser(User user);
     
-    // Find orders by user ID
-    List<Order> findByUserId(Long userId);
+    // Find orders by user ID - FIXED
+    @Query("SELECT o FROM Order o WHERE o.user.userId = :userId")
+    List<Order> findByUserId(@Param("userId") Long userId);
     
     // Find orders by status
     List<Order> findByStatus(OrderStatus status);
@@ -35,11 +36,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserAndStatus(User user, OrderStatus status);
     
     // Custom query to find orders with items eagerly loaded
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.id = :id")
-    Optional<Order> findByIdWithItems(@Param("id") Long id);
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.orderId = :orderId")
+    Optional<Order> findByIdWithItems(@Param("orderId") Long orderId);
     
     // Custom query to find user orders with items
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.user.id = :userId ORDER BY o.orderDate DESC")
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.user.userId = :userId ORDER BY o.orderDate DESC")
     List<Order> findByUserIdWithItems(@Param("userId") Long userId);
     
     // Count orders by status
@@ -48,4 +49,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Calculate total revenue
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = com.caffinity.demo.entity.OrderStatus.COMPLETED")
     Double getTotalRevenue();
+    
+    // CUSTOM METHODS FOR CUSTOM FIELD NAMES
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId")
+    Optional<Order> findByOrderId(@Param("orderId") Long orderId);
+    
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.orderId = :orderId")
+    boolean existsByOrderId(@Param("orderId") Long orderId);
+    
+    // Custom delete method
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Order o WHERE o.orderId = :orderId")
+    void deleteByOrderId(@Param("orderId") Long orderId);
+    
+    // Find orders by multiple order IDs
+    @Query("SELECT o FROM Order o WHERE o.orderId IN :orderIds")
+    List<Order> findByOrderIds(@Param("orderIds") List<Long> orderIds);
 }

@@ -48,7 +48,7 @@ public class ProductService {
     }
     
     public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
+        return productRepository.findByProductId(id);
     }
     
     public Product saveProduct(Product product) {
@@ -62,7 +62,7 @@ public class ProductService {
             System.out.println("=== STARTING PRODUCT DELETION FOR ID: " + id + " ===");
             
             // First, check if product exists
-            Optional<Product> product = productRepository.findById(id);
+            Optional<Product> product = productRepository.findByProductId(id);
             if (!product.isPresent()) {
                 System.err.println("❌ Product not found with ID: " + id);
                 throw new RuntimeException("Product not found with ID: " + id);
@@ -76,8 +76,8 @@ public class ProductService {
             
             if (!cartItems.isEmpty()) {
                 cartItems.forEach(item -> 
-                    System.out.println("   - Cart Item ID: " + item.getId() + ", Cart ID: " + 
-                        (item.getCart() != null ? item.getCart().getId() : "null")));
+                    System.out.println("   - Cart Item ID: " + item.getCartItemId() + ", Cart ID: " + 
+                        (item.getCart() != null ? item.getCart().getCartId() : "null")));
                 
                 // Delete all cart items that reference this product
                 System.out.println("🗑️ Deleting cart items using repository method...");
@@ -128,7 +128,7 @@ public class ProductService {
             if (!cartItems.isEmpty()) {
                 // Delete each cart item individually
                 for (CartItem cartItem : cartItems) {
-                    System.out.println("Deleting cart item individually: " + cartItem.getId());
+                    System.out.println("Deleting cart item individually: " + cartItem.getCartItemId());
                     cartItemRepository.delete(cartItem);
                 }
                 System.out.println("All cart items deleted individually");
@@ -151,7 +151,7 @@ public class ProductService {
     }
     
     public Product updateProduct(Long id, Product productDetails) {
-        Optional<Product> optionalProduct = productRepository.findById(id);
+        Optional<Product> optionalProduct = productRepository.findByProductId(id);
         if (optionalProduct.isPresent()) {
             Product product = optionalProduct.get();
             product.setName(productDetails.getName());

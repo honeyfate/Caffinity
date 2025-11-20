@@ -16,8 +16,9 @@ import com.caffinity.demo.entity.PaymentStatus;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     
-    // Find payment by order ID
-    Optional<Payment> findByOrderId(Long orderId);
+    // Find payment by order ID - FIXED
+    @Query("SELECT p FROM Payment p WHERE p.order.orderId = :orderId")
+    Optional<Payment> findByOrderId(@Param("orderId") Long orderId);
     
     // Find payments by status
     List<Payment> findByStatus(PaymentStatus status);
@@ -40,7 +41,19 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p ORDER BY p.paymentDate DESC LIMIT :limit")
     List<Payment> findRecentPayments(@Param("limit") int limit);
     
-    // Find payments by order IDs
-    @Query("SELECT p FROM Payment p WHERE p.order.id IN :orderIds")
+    // Find payments by order IDs - UPDATED
+    @Query("SELECT p FROM Payment p WHERE p.order.orderId IN :orderIds")
     List<Payment> findByOrderIds(@Param("orderIds") List<Long> orderIds);
+    
+    // CUSTOM METHODS FOR CUSTOM FIELD NAMES
+    @Query("SELECT p FROM Payment p WHERE p.paymentId = :paymentId")
+    Optional<Payment> findByPaymentId(@Param("paymentId") Long paymentId);
+    
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p WHERE p.paymentId = :paymentId")
+    boolean existsByPaymentId(@Param("paymentId") Long paymentId);
+    
+    // Custom delete method
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Payment p WHERE p.paymentId = :paymentId")
+    void deleteByPaymentId(@Param("paymentId") Long paymentId);
 }

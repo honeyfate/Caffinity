@@ -20,4 +20,20 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     
     @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.cartItems WHERE c.sessionId = :sessionId")
     Optional<Cart> findBySessionIdWithItems(@Param("sessionId") String sessionId);
+    
+    // CUSTOM METHODS FOR CUSTOM FIELD NAMES
+    @Query("SELECT c FROM Cart c WHERE c.cartId = :cartId")
+    Optional<Cart> findByCartId(@Param("cartId") Long cartId);
+    
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Cart c WHERE c.cartId = :cartId")
+    boolean existsByCartId(@Param("cartId") Long cartId);
+    
+    // Custom delete method
+    @Modifying
+    @Query("DELETE FROM Cart c WHERE c.cartId = :cartId")
+    void deleteByCartId(@Param("cartId") Long cartId);
+    
+    // Find carts by multiple cart IDs
+    @Query("SELECT c FROM Cart c WHERE c.cartId IN :cartIds")
+    java.util.List<Cart> findByCartIds(@Param("cartIds") java.util.List<Long> cartIds);
 }

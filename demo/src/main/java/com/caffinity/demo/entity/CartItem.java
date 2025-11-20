@@ -8,7 +8,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "cart_item_id")
+    private Long cartItemId;
     
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
@@ -35,8 +36,8 @@ public class CartItem {
     }
     
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getCartItemId() { return cartItemId; }
+    public void setCartItemId(Long cartItemId) { this.cartItemId = cartItemId; }
     
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }

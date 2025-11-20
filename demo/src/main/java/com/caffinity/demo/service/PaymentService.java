@@ -43,7 +43,7 @@ public class PaymentService {
 
     @Transactional
     public Payment completePayment(Long paymentId, String transactionId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByPaymentId(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found with id: " + paymentId));
         
         payment.setStatus(PaymentStatus.COMPLETED);
@@ -59,7 +59,7 @@ public class PaymentService {
 
     @Transactional
     public Payment failPayment(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByPaymentId(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found with id: " + paymentId));
         
         payment.setStatus(PaymentStatus.FAILED);
@@ -77,7 +77,7 @@ public class PaymentService {
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Payment not found for order id: " + orderId));
         
-        return failPayment(payment.getId());
+        return failPayment(payment.getPaymentId());
     }
 
     public Optional<Payment> getPaymentByOrderId(Long orderId) {

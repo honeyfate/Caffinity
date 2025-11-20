@@ -16,7 +16,8 @@ import jakarta.persistence.Table;
 public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "order_item_id")
+    private Long orderItemId;
     
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
@@ -43,8 +44,8 @@ public class OrderItem {
     }
     
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getOrderItemId() { return orderItemId; }
+    public void setOrderItemId(Long orderItemId) { this.orderItemId = orderItemId; }
     
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }

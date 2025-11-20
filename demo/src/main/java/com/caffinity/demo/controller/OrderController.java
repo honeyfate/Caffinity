@@ -26,15 +26,13 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // Create new order from cart
+    // Create new order from cart - UPDATED
     @PostMapping("/create")
     public ResponseEntity<?> createOrderFromCart(
-            @RequestParam Long userId,
-            @RequestParam String shippingAddress,
-            @RequestParam(required = false) String customerNotes) {
+            @RequestParam Long userId) {
         try {
             System.out.println("🔄 Received request to create order for user: " + userId);
-            Order order = orderService.createOrderFromCart(userId, shippingAddress, customerNotes);
+            Order order = orderService.createOrderFromCart(userId);
             return ResponseEntity.ok(order);
         } catch (Exception e) {
             System.err.println("❌ Error creating order: " + e.getMessage());
@@ -60,7 +58,7 @@ public class OrderController {
         try {
             Optional<Order> order = orderService.getOrderByIdWithItems(id);
             return order.map(ResponseEntity::ok)
-                       .orElse(ResponseEntity.notFound().build());
+                    .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             System.err.println("❌ Error fetching order: " + e.getMessage());
             return ResponseEntity.internalServerError().build();

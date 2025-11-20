@@ -1,4 +1,3 @@
-// Payment.java
 package com.caffinity.demo.entity;
 
 import jakarta.persistence.*;
@@ -9,7 +8,8 @@ import java.time.LocalDateTime;
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "payment_id")
+    private Long paymentId;
     
     @OneToOne
     @JoinColumn(name = "order_id", nullable = false)
@@ -48,8 +48,8 @@ public class Payment {
     }
     
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getPaymentId() { return paymentId; }
+    public void setPaymentId(Long paymentId) { this.paymentId = paymentId; }
     
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }

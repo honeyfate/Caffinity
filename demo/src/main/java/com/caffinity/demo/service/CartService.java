@@ -36,12 +36,12 @@ public class CartService {
     @Transactional
     public Cart addToCart(String sessionId, Long productId, Integer quantity) {
         Cart cart = getOrCreateCart(sessionId);
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         
         // Check if item already exists in cart
         Optional<CartItem> existingItem = cart.getCartItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct().getProductId().equals(productId))
                 .findFirst();
         
         if (existingItem.isPresent()) {
@@ -68,7 +68,7 @@ public class CartService {
         }
         
         Optional<CartItem> existingItem = cart.getCartItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct().getProductId().equals(productId))
                 .findFirst();
         
         if (existingItem.isPresent()) {
@@ -86,7 +86,7 @@ public class CartService {
         Cart cart = getOrCreateCart(sessionId);
         
         Optional<CartItem> itemToRemove = cart.getCartItems().stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct().getProductId().equals(productId))
                 .findFirst();
         
         if (itemToRemove.isPresent()) {

@@ -25,6 +25,12 @@ const AdminDesserts = () => {
       const response = await axios.get('http://localhost:8080/api/products/desserts');
       console.log('Dessert products fetched:', response.data);
       
+      // Debug product IDs
+      if (response.data.length > 0) {
+        console.log('First product fields:', Object.keys(response.data[0]));
+        console.log('First product ID:', response.data[0].id, 'Product ID:', response.data[0].productId);
+      }
+      
       // Ensure we have proper image URLs
       const productsWithImages = response.data.map(product => ({
         ...product,
@@ -93,8 +99,9 @@ const AdminDesserts = () => {
       console.log('Submitting dessert form data...');
       let response;
       if (editingProduct) {
-        // Update existing product
-        response = await axios.put(`http://localhost:8080/api/products/${editingProduct.id}`, submitData, {
+        // Update existing product - USE CORRECT PRODUCT ID
+        const productId = editingProduct.productId || editingProduct.id;
+        response = await axios.put(`http://localhost:8080/api/products/${productId}`, submitData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -154,48 +161,31 @@ const AdminDesserts = () => {
     setShowAddForm(true);
   };
 
- // Delete product
-const handleDelete = async (productId) => {
-  if (window.confirm('Are you sure you want to delete this dessert?')) {
-    try {
-      setIsLoading(true);
-      console.log('🔄 Attempting to delete dessert with ID:', productId);
-      
-      const response = await axios.delete(`http://localhost:8080/api/products/${productId}`);
-      console.log('✅ Delete response:', response.status, response.statusText);
-      
-      // FIXED: Use setDessertProducts instead of setCoffeeProducts
-      setDessertProducts(prev => prev.filter(product => product.id !== productId));
-      alert('Dessert deleted successfully!');
-      
-    } catch (error) {
-      console.error('❌ Full error object:', error);
-      console.error('❌ Error response:', error.response);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
-      
-      let errorMessage = 'Error deleting dessert. Please try again.';
-      
-      if (error.response) {
-        // Server responded with error status
-        errorMessage = `Server Error: ${error.response.status} - ${error.response.statusText}`;
-        if (error.response.data) {
-          errorMessage += ` - ${JSON.stringify(error.response.data)}`;
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = 'Network Error: No response from server. Check if backend is running.';
-      } else {
-        // Something else happened
-        errorMessage = `Error: ${error.message}`;
+  // Delete product - FIXED VERSION
+  const handleDelete = async (product) => {
+    if (window.confirm('Are you sure you want to delete this dessert?')) {
+      try {
+        setIsLoading(true);
+        
+        // USE THE CORRECT PRODUCT ID FIELD
+        const productId = product.productId || product.id;
+        console.log('🔄 Attempting to delete dessert with ID:', productId);
+        
+        const response = await axios.delete(`http://localhost:8080/api/products/${productId}`);
+        console.log('✅ Delete response:', response.status, response.statusText);
+        
+        // Use the same ID logic for filtering
+        setDessertProducts(prev => prev.filter(p => (p.productId || p.id) !== productId));
+        alert('Dessert deleted successfully!');
+        
+      } catch (error) {
+        console.error('❌ Error deleting dessert:', error);
+        alert('Error deleting dessert. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-      
-      alert(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
-  }
-};
+  };
 
   // Get image source for product
   const getProductImage = (product) => {
@@ -366,7 +356,7 @@ const handleDelete = async (productId) => {
           </div>
         ) : (
           dessertProducts.map(product => (
-            <div key={product.id} className="product-card">
+            <div key={product.productId || product.id} className="product-card">
               <div className="product-image">
                 <img 
                   src={getProductImage(product)} 
@@ -400,7 +390,7 @@ const handleDelete = async (productId) => {
                     </button>
                     <button 
                       className="delete-btn"
-                      onClick={() => handleDelete(product.id)}
+                      onClick={() => handleDelete(product)}
                       disabled={isLoading}
                     >
                       Delete

@@ -61,20 +61,26 @@ const CustomerCoffee = () => {
 
   // Fetch coffee products from backend
   const fetchCoffeeProducts = async () => {
-    try {
-      console.log('Fetching coffee products for customer...');
-      const response = await axios.get('http://localhost:8080/api/products/coffee');
-      console.log('Products fetched:', response.data);
-      
-      const productsWithImages = response.data.map(product => ({
-        ...product,
-        imageUrl: product.imageUrl || getPlaceholderImage(product.name)
-      }));
-      setCoffeeProducts(productsWithImages);
-    } catch (error) {
-      console.error('Error fetching coffee products:', error);
+  try {
+    console.log('Fetching coffee products for customer...');
+    const response = await axios.get('http://localhost:8080/api/products/coffee');
+    console.log('Products fetched:', response.data);
+    
+    // ADD THIS DEBUG LOG:
+    if (response.data.length > 0) {
+      console.log('First product fields:', Object.keys(response.data[0]));
+      console.log('First product ID field:', response.data[0].id, response.data[0].productId);
     }
-  };
+    
+    const productsWithImages = response.data.map(product => ({
+      ...product,
+      imageUrl: product.imageUrl || getPlaceholderImage(product.name)
+    }));
+    setCoffeeProducts(productsWithImages);
+  } catch (error) {
+    console.error('Error fetching coffee products:', error);
+  }
+};
 
   // Helper function for placeholder images
   const getPlaceholderImage = (productName) => {
@@ -86,75 +92,117 @@ const CustomerCoffee = () => {
   }, []);
 
   // Toggle cart item - add if not present, remove if present
-  const toggleCartItem = async (product) => {
-    setIsLoading(true);
+// Toggle cart item - add if not present, remove if present
+const toggleCartItem = async (product) => {
+  setIsLoading(true);
+  
+  try {
+    const sessionId = getSessionId();
     
-    try {
-      const sessionId = getSessionId();
-      const isCurrentlyInCart = isInCart(product.id);
+    // USE THE CORRECT PRODUCT ID FIELD
+    const productId = product.productId || product.id;
+    const isCurrentlyInCart = isInCart(productId);
 
-      if (isCurrentlyInCart) {
-        // Remove from cart
-        await axios.delete(`http://localhost:8080/api/cart/remove/${product.id}`, {
-          headers: { 'X-Session-Id': sessionId }
-        });
-        showNotification(`${product.name} removed from cart!`, 'success');
-      } else {
-        // Add to cart
-        await axios.post('http://localhost:8080/api/cart/add', 
-          { productId: product.id, quantity: 1 },
-          { headers: { 'X-Session-Id': sessionId } }
-        );
-        showNotification(`${product.name} added to cart!`, 'success');
-      }
-      
-      // Refresh cart data
-      await fetchCart();
-    } catch (error) {
-      console.error('Error toggling cart item:', error);
-      // Fallback to localStorage
-      const savedCart = localStorage.getItem('cart') || '[]';
-      let cartItems = JSON.parse(savedCart);
-      const existingItemIndex = cartItems.findIndex(item => {
-        const itemProductId = item.product?.id || item.id;
-        return itemProductId === product.id;
-      });
-      
-      if (existingItemIndex > -1) {
-        // Remove from cart
-        cartItems.splice(existingItemIndex, 1);
-        showNotification(`${product.name} removed from cart!`, 'success');
-      } else {
-        // Add to cart
-        cartItems.push({ ...product, quantity: 1 });
-        showNotification(`${product.name} added to cart!`, 'success');
-      }
-      
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-      setCartItems(cartItems);
-    } finally {
-      setIsLoading(false);
+    console.log('=== DEBUG TOGGLE CART ===');
+    console.log('Full product object:', product);
+    console.log('Product ID:', productId);
+    console.log('Product ID type:', typeof productId);
+    console.log('Session ID:', sessionId);
+
+    // Validate product ID
+    if (!productId || productId === 'undefined' || productId === 'null') {
+      console.error('INVALID PRODUCT ID:', productId);
+      throw new Error('Invalid product ID');
     }
-  };
+
+    if (isCurrentlyInCart) {
+      // Remove from cart
+      console.log('Removing product ID:', productId);
+      const deleteUrl = `http://localhost:8080/api/cart/remove/${productId}`;
+      console.log('DELETE URL:', deleteUrl);
+      
+      await axios.delete(deleteUrl, {
+        headers: { 'X-Session-Id': sessionId }
+      });
+      showNotification(`${product.name} removed from cart!`, 'success');
+    } else {
+      // Add to cart
+      console.log('Adding product ID:', productId);
+      const requestData = {
+        productId: Number(productId), // Ensure it's a number
+        quantity: 1
+      };
+      console.log('Request data:', requestData);
+      
+      await axios.post('http://localhost:8080/api/cart/add', 
+        requestData,
+        { headers: { 'X-Session-Id': sessionId } }
+      );
+      showNotification(`${product.name} added to cart!`, 'success');
+    }
+    
+    // Refresh cart data
+    await fetchCart();
+  } catch (error) {
+    console.error('=== ERROR TOGGLING CART ITEM ===');
+    console.error('Error message:', error.message);
+    console.error('Error response data:', error.response?.data);
+    console.error('Error response status:', error.response?.status);
+    
+    // Fallback to localStorage
+    console.log('Using localStorage fallback');
+    const savedCart = localStorage.getItem('cart') || '[]';
+    let cartItems = JSON.parse(savedCart);
+    const existingItemIndex = cartItems.findIndex(item => {
+      const itemProductId = item.product?.productId || item.productId || item.id;
+      return itemProductId === product.productId || itemProductId === product.id;
+    });
+    
+    if (existingItemIndex > -1) {
+      cartItems.splice(existingItemIndex, 1);
+      showNotification(`${product.name} removed from cart!`, 'success');
+    } else {
+      cartItems.push({ 
+        productId: product.productId || product.id, 
+        quantity: 1,
+        product: {
+          productId: product.productId || product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          imageUrl: product.imageUrl
+        }
+      });
+      showNotification(`${product.name} added to cart!`, 'success');
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cartItems));
+    setCartItems(cartItems);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Handle buy now (add to cart and redirect to cart page)
-  const handleBuyNow = async (product) => {
-    if (!isInCart(product.id)) {
-      await toggleCartItem(product);
-    }
-    // Redirect to cart page after a short delay
-    setTimeout(() => {
-      window.location.href = '/customer/cart';
-    }, 600);
-  };
-
+  // Handle buy now (add to cart and redirect to cart page)
+const handleBuyNow = async (product) => {
+  const productId = product.productId || product.id;
+  if (!isInCart(productId)) {
+    await toggleCartItem(product);
+  }
+  // Redirect to cart page after a short delay
+  setTimeout(() => {
+    window.location.href = '/customer/cart';
+  }, 600);
+};
   // Check if product is in cart
-  const isInCart = (productId) => {
-    return cartItems.some(item => {
-      const itemProductId = item.product?.id || item.id;
-      return itemProductId === productId;
-    });
-  };
+ // Check if product is in cart
+const isInCart = (productId) => {
+  return cartItems.some(item => {
+    const itemProductId = item.product?.productId || item.productId || item.id;
+    return itemProductId === productId;
+  });
+};
 
   // Get image source for product
   const getProductImage = (product) => {
@@ -220,10 +268,10 @@ const CustomerCoffee = () => {
                 {/* Action Buttons */}
                 <div className="product-actions">
                   <button 
-                    className={`add-to-cart-btn ${isInCart(product.id) ? 'in-cart' : ''}`}
+                    className={`add-to-cart-btn ${isInCart(product.productId || product.id) ? 'in-cart' : ''}`}
                     onClick={() => toggleCartItem(product)}
                     disabled={isLoading}
-                    title={isInCart(product.id) ? 'Remove from Cart' : 'Add to Cart'}
+                  title={isInCart(product.productId || product.id) ? 'Remove from Cart' : 'Add to Cart'}
                   >
                     {isInCart(product.id) ? (
                       <FaCheck className="check-icon" />

@@ -195,7 +195,6 @@ const handleBuyNow = async (product) => {
     window.location.href = '/customer/cart';
   }, 600);
 };
-  // Check if product is in cart
  // Check if product is in cart
 const isInCart = (productId) => {
   return cartItems.some(item => {
@@ -271,9 +270,9 @@ const isInCart = (productId) => {
                     className={`add-to-cart-btn ${isInCart(product.productId || product.id) ? 'in-cart' : ''}`}
                     onClick={() => toggleCartItem(product)}
                     disabled={isLoading}
-                  title={isInCart(product.productId || product.id) ? 'Remove from Cart' : 'Add to Cart'}
+                    title={isInCart(product.productId || product.id) ? 'Remove from Cart' : 'Add to Cart'}
                   >
-                    {isInCart(product.id) ? (
+                    {isInCart(product.productId || product.id) ? ( // CHANGED THIS LINE
                       <FaCheck className="check-icon" />
                     ) : (
                       <FaCartPlus className="cart-icon" />

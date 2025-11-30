@@ -5,14 +5,12 @@ import '../css/CustomerCart.css';
 
 const CustomerCart = () => {
   const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   
-  // Form state for customer information
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: ''
@@ -31,7 +29,6 @@ const CustomerCart = () => {
   // Load cart from database
   const fetchCart = async () => {
     try {
-      setIsLoading(true);
       const sessionId = getSessionId();
       const response = await axios.get('http://localhost:8080/api/cart', {
         headers: { 'X-Session-Id': sessionId }
@@ -57,8 +54,6 @@ const CustomerCart = () => {
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -86,9 +81,14 @@ const CustomerCart = () => {
     return item.product?.category || item.category || '';
   };
 
-  // Safe function to get product ID
+  // FIXED: Use cartItemId as the unique identifier
+  const getCartItemId = (item) => {
+    return item.cartItemId || item.id;
+  };
+
+  // Safe function to get product ID (for API calls)
   const getProductId = (item) => {
-    return item.product?.id || item.id;
+    return item.product?.productId || item.productId;
   };
 
   // Safe function to get product image
@@ -103,74 +103,73 @@ const CustomerCart = () => {
     return `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
   };
 
-  // Handle checkbox selection
-  const handleSelectItem = (productId) => {
+  // FIXED: Handle checkbox selection using cartItemId
+  const handleSelectItem = (cartItemId) => {
     setSelectedItems(prev => {
       const newSelected = new Set(prev);
-      if (newSelected.has(productId)) {
-        newSelected.delete(productId);
+      if (newSelected.has(cartItemId)) {
+        newSelected.delete(cartItemId);
       } else {
-        newSelected.add(productId);
+        newSelected.add(cartItemId);
       }
       return newSelected;
     });
   };
 
-  // Select all items
+  // FIXED: Select all items using cartItemId
   const handleSelectAll = () => {
     if (selectedItems.size === cartItems.length) {
       setSelectedItems(new Set());
     } else {
-      const allItemIds = cartItems.map(item => getProductId(item));
+      const allItemIds = cartItems.map(item => getCartItemId(item));
       setSelectedItems(new Set(allItemIds));
     }
   };
 
-  // Handle quantity update (optimistic update)
-  const handleQuantityUpdate = async (productId, newQuantity) => {
-    if (newQuantity === 0) {
-      // Show confirmation modal instead of immediate removal
-      const item = cartItems.find(item => getProductId(item) === productId);
-      showDeleteConfirmation(productId, getItemName(item));
+  // FIXED: Simplified quantity update without loading
+  const handleQuantityUpdate = async (cartItemId, newQuantity) => {
+    if (newQuantity < 1) {
+      const item = cartItems.find(item => getCartItemId(item) === cartItemId);
+      showDeleteConfirmation(cartItemId, getItemName(item));
       return;
     }
 
-    // Optimistically update the UI first
+    // Find the item to get productId for API call
+    const item = cartItems.find(item => getCartItemId(item) === cartItemId);
+    if (!item) return;
+
+    // Optimistic update - update UI immediately
     setCartItems(prevItems => 
       prevItems.map(item => 
-        getProductId(item) === productId ? { ...item, quantity: newQuantity } : item
+        getCartItemId(item) === cartItemId ? { ...item, quantity: newQuantity } : item
       )
     );
 
-    // Then update in database
-    await updateQuantity(productId, newQuantity);
-  };
-
-  // Update quantity in database
-  const updateQuantity = async (productId, newQuantity) => {
+    // Update in database silently in background
     try {
       const sessionId = getSessionId();
+      const productId = getProductId(item);
       
-      // Only make API call if quantity is greater than 0
-      if (newQuantity > 0) {
-        await axios.put('http://localhost:8080/api/cart/update', 
-          { productId, quantity: newQuantity },
-          { headers: { 'X-Session-Id': sessionId } }
-        );
-      }
+      await axios.put('http://localhost:8080/api/cart/update', 
+        { productId, quantity: newQuantity },
+        { headers: { 'X-Session-Id': sessionId } }
+      );
       
-      // Refresh cart to ensure sync with server
-      fetchCart();
+      // Success - no UI feedback needed
     } catch (error) {
       console.error('Error updating cart:', error);
       // Revert optimistic update on error
-      fetchCart();
+      setCartItems(prevItems => 
+        prevItems.map(item => 
+          getCartItemId(item) === cartItemId ? { ...item, quantity: item.quantity } : item
+        )
+      );
     }
   };
 
   // Show delete confirmation modal
-  const showDeleteConfirmation = (productId, productName) => {
-    setProductToDelete({ id: productId, name: productName });
+  const showDeleteConfirmation = (cartItemId, productName) => {
+    setProductToDelete({ id: cartItemId, name: productName });
     setShowDeleteModal(true);
   };
 
@@ -183,25 +182,33 @@ const CustomerCart = () => {
     setShowBulkDeleteModal(true);
   };
 
-  // Remove item from cart completely
-  const removeFromCart = async (productId) => {
+  // FIXED: Remove item using proper identifiers
+  const removeFromCart = async (cartItemId) => {
     try {
       const sessionId = getSessionId();
-      await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-        headers: { 'X-Session-Id': sessionId }
-      });
+      const item = cartItems.find(item => getCartItemId(item) === cartItemId);
+      
+      if (item) {
+        const productId = getProductId(item);
+        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+          headers: { 'X-Session-Id': sessionId }
+        });
+      }
+      
+      // Update UI
+      setCartItems(prevItems => prevItems.filter(item => getCartItemId(item) !== cartItemId));
       setSelectedItems(prev => {
         const newSelected = new Set(prev);
-        newSelected.delete(productId);
+        newSelected.delete(cartItemId);
         return newSelected;
       });
-      fetchCart();
     } catch (error) {
       console.error('Error removing from cart:', error);
-      setCartItems(prevItems => prevItems.filter(item => getProductId(item) !== productId));
+      // Update UI even if API fails
+      setCartItems(prevItems => prevItems.filter(item => getCartItemId(item) !== cartItemId));
       setSelectedItems(prev => {
         const newSelected = new Set(prev);
-        newSelected.delete(productId);
+        newSelected.delete(cartItemId);
         return newSelected;
       });
     }
@@ -222,29 +229,33 @@ const CustomerCart = () => {
     setProductToDelete(null);
   };
 
-  // Remove selected items from cart
+  // FIXED: Remove selected items using proper identifiers
   const removeSelectedItems = async () => {
-    try {
-      setIsLoading(true);
-      const sessionId = getSessionId();
-      
-      for (const productId of selectedItems) {
+    // Get all items to be removed for API calls
+    const itemsToRemove = cartItems.filter(item => 
+      selectedItems.has(getCartItemId(item))
+    );
+    
+    // Remove from UI immediately
+    setCartItems(prevItems => 
+      prevItems.filter(item => !selectedItems.has(getCartItemId(item)))
+    );
+    
+    // Remove from API in background
+    const sessionId = getSessionId();
+    for (const item of itemsToRemove) {
+      const productId = getProductId(item);
+      try {
         await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
           headers: { 'X-Session-Id': sessionId }
         });
+      } catch (error) {
+        console.error('Error removing item:', error);
       }
-      
-      setSelectedItems(new Set());
-      fetchCart();
-      setShowBulkDeleteModal(false);
-    } catch (error) {
-      console.error('Error removing selected items:', error);
-      setCartItems(prevItems => prevItems.filter(item => !selectedItems.has(getProductId(item))));
-      setSelectedItems(new Set());
-      setShowBulkDeleteModal(false);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setSelectedItems(new Set());
+    setShowBulkDeleteModal(false);
   };
 
   // Cancel bulk deletion
@@ -260,10 +271,10 @@ const CustomerCart = () => {
     }, 0);
   };
 
-  // Get total price for selected items only
+  // FIXED: Get total price for selected items using cartItemId
   const getSelectedTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      if (selectedItems.has(getProductId(item))) {
+      if (selectedItems.has(getCartItemId(item))) {
         const price = getItemPrice(item);
         return total + (price * item.quantity);
       }
@@ -271,10 +282,10 @@ const CustomerCart = () => {
     }, 0);
   };
 
-  // Get total quantity for selected items
+  // FIXED: Get total quantity for selected items using cartItemId
   const getSelectedTotalQuantity = () => {
     return cartItems.reduce((total, item) => {
-      if (selectedItems.has(getProductId(item))) {
+      if (selectedItems.has(getCartItemId(item))) {
         return total + item.quantity;
       }
       return total;
@@ -293,17 +304,10 @@ const CustomerCart = () => {
       return;
     }
     
-    try {
-      setIsLoading(true);
-      setCurrentStep(2);
-      const selectedCartItems = cartItems.filter(item => selectedItems.has(getProductId(item)));
-      localStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
-      console.log('Proceeding to checkout with items:', selectedCartItems);
-    } catch (error) {
-      console.error('Error during checkout:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    setCurrentStep(2);
+    const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
+    localStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
+    console.log('Proceeding to checkout with items:', selectedCartItems);
   };
 
   // Navigation between steps
@@ -327,10 +331,10 @@ const CustomerCart = () => {
     }));
   };
 
-  // Get selected product names for bulk delete modal
+  // FIXED: Get selected product names using cartItemId
   const getSelectedProductNames = () => {
     return cartItems
-      .filter(item => selectedItems.has(getProductId(item)))
+      .filter(item => selectedItems.has(getCartItemId(item)))
       .map(item => getItemName(item));
   };
 
@@ -358,7 +362,6 @@ const CustomerCart = () => {
                           type="checkbox"
                           checked={selectedItems.size === cartItems.length && cartItems.length > 0}
                           onChange={handleSelectAll}
-                          disabled={isLoading}
                         />
                         <span className="checkmark"></span>
                         Select All
@@ -367,7 +370,6 @@ const CustomerCart = () => {
                         <button 
                           className="remove-selected-btn"
                           onClick={showBulkDeleteConfirmation}
-                          disabled={isLoading}
                         >
                           Remove Selected ({selectedItems.size})
                         </button>
@@ -377,9 +379,7 @@ const CustomerCart = () => {
                 </div>
               </div>
               <div className="card-content">
-                {isLoading ? (
-                  <div className="loading">Loading cart...</div>
-                ) : cartItems.length === 0 ? (
+                {cartItems.length === 0 ? (
                   <div className="empty-cart">
                     <div className="empty-cart-icon">🛒</div>
                     <h3>Your cart is empty</h3>
@@ -394,25 +394,23 @@ const CustomerCart = () => {
                 ) : (
                   <div className="cart-items-list">
                     {cartItems.map(item => {
-                      const productId = getProductId(item);
-                      const isSelected = selectedItems.has(productId);
+                      const cartItemId = getCartItemId(item);
+                      const isSelected = selectedItems.has(cartItemId);
                       const productName = getItemName(item);
                       
                       return (
-                        <div key={item.id || productId} className={`cart-item-card ${isSelected ? 'selected' : ''}`}>
+                        <div key={cartItemId} className={`cart-item-card ${isSelected ? 'selected' : ''}`}>
                           <div className="cart-item-checkbox">
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => handleSelectItem(productId)}
-                              disabled={isLoading}
+                              onChange={() => handleSelectItem(cartItemId)}
                             />
                           </div>
                           
                           <button 
                             className="delete-btn-x"
-                            onClick={() => showDeleteConfirmation(productId, productName)}
-                            disabled={isLoading}
+                            onClick={() => showDeleteConfirmation(cartItemId, productName)}
                             title="Remove item"
                           >
                             ×
@@ -445,17 +443,17 @@ const CustomerCart = () => {
                             <div className="quantity-section">
                               <div className="quantity-controls">
                                 <button 
-                                  onClick={() => handleQuantityUpdate(productId, item.quantity - 1)}
+                                  onClick={() => handleQuantityUpdate(cartItemId, item.quantity - 1)}
                                   className="quantity-btn"
-                                  disabled={isLoading}
                                 >
                                   -
                                 </button>
-                                <span className="quantity">{item.quantity}</span>
+                                <span className="quantity">
+                                  {item.quantity}
+                                </span>
                                 <button 
-                                  onClick={() => handleQuantityUpdate(productId, item.quantity + 1)}
+                                  onClick={() => handleQuantityUpdate(cartItemId, item.quantity + 1)}
                                   className="quantity-btn"
-                                  disabled={isLoading}
                                 >
                                   +
                                 </button>
@@ -479,70 +477,68 @@ const CustomerCart = () => {
         );
 
       case 2: // Customer Information - CENTERED
-      return (
-        <div className="centered-step-container">
-          {/* Back Button at the top of the card */}
-          <div className="top-back-button-container">
-            <button 
-              className="top-back-button"
-              onClick={handlePrevStep}
-              disabled={isLoading}
-            >
-              <FaArrowLeft className="back-icon" />
-              Back to Cart
-            </button>
-          </div>
-          
-          <div className="content-card centered-card">
-            <div className="card-header">
-              <h3 className="card-title">Customer Information</h3>
+        return (
+          <div className="centered-step-container">
+            <div className="top-back-button-container">
+              <button 
+                className="top-back-button"
+                onClick={handlePrevStep}
+              >
+                <FaArrowLeft className="back-icon" />
+                Back to Cart
+              </button>
             </div>
-            <div className="card-content">
-              <div className="checkout-form">
-                <div className="form-section">
-                  <h4 className="form-section-title">Contact Details</h4>
-                  <div className="form-group">
-                    <label className="form-label">
-                      <FaUser className="form-icon" />
-                      Full Name
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="Enter your full name" 
-                      className="form-input"
-                      value={customerInfo.name}
-                      onChange={(e) => handleCustomerInfoChange('name', e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">
-                      <FaPhone className="form-icon" />
-                      Phone Number
-                    </label>
-                    <input 
-                      type="tel" 
-                      placeholder="Enter your phone number" 
-                      className="form-input"
-                      value={customerInfo.phone}
-                      onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
-                    />
+            
+            <div className="content-card centered-card">
+              <div className="card-header">
+                <h3 className="card-title">Customer Information</h3>
+              </div>
+              <div className="card-content">
+                <div className="checkout-form">
+                  <div className="form-section">
+                    <h4 className="form-section-title">Contact Details</h4>
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaUser className="form-icon" />
+                        Full Name
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="Enter your full name" 
+                        className="form-input"
+                        value={customerInfo.name}
+                        onChange={(e) => handleCustomerInfoChange('name', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaPhone className="form-icon" />
+                        Phone Number
+                      </label>
+                      <input 
+                        type="tel" 
+                        placeholder="Enter your phone number" 
+                        className="form-input"
+                        value={customerInfo.phone}
+                        onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="card-actions">
-              <button 
-                className="card-btn" 
-                onClick={handleNextStep}
-                disabled={isLoading || !customerInfo.name || !customerInfo.phone}
-              >
-                Continue to Payment
-              </button>
+              <div className="card-actions">
+                <button 
+                  className="card-btn" 
+                  onClick={handleNextStep}
+                  disabled={!customerInfo.name || !customerInfo.phone}
+                >
+                  Continue to Payment
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      );
+        );
 
       case 3: // Payment - CENTERED
         return (
@@ -552,7 +548,6 @@ const CustomerCart = () => {
                 <button 
                   className="back-button"
                   onClick={handlePrevStep}
-                  disabled={isLoading}
                 >
                   <FaArrowLeft className="back-icon" />
                   Back
@@ -596,7 +591,6 @@ const CustomerCart = () => {
                 <button 
                   className="card-btn" 
                   onClick={handleNextStep}
-                  disabled={isLoading}
                 >
                   Place Order
                 </button>
@@ -613,7 +607,6 @@ const CustomerCart = () => {
                 <button 
                   className="back-button"
                   onClick={() => setCurrentStep(1)}
-                  disabled={isLoading}
                 >
                   <FaArrowLeft className="back-icon" />
                   Back to Cart
@@ -637,7 +630,6 @@ const CustomerCart = () => {
                 <button 
                   className="card-btn" 
                   onClick={() => {
-                    // Reset and go back to cart
                     setCurrentStep(1);
                     setSelectedItems(new Set());
                     setCustomerInfo({ name: '', phone: '' });
@@ -672,14 +664,12 @@ const CustomerCart = () => {
               <button 
                 className="modal-btn cancel-btn"
                 onClick={cancelDelete}
-                disabled={isLoading}
               >
                 No, Keep It
               </button>
               <button 
                 className="modal-btn confirm-btn"
                 onClick={confirmDelete}
-                disabled={isLoading}
               >
                 Yes, Remove
               </button>
@@ -707,16 +697,14 @@ const CustomerCart = () => {
               <button 
                 className="modal-btn cancel-btn"
                 onClick={cancelBulkDelete}
-                disabled={isLoading}
               >
                 Cancel
               </button>
               <button 
                 className="modal-btn confirm-btn"
                 onClick={removeSelectedItems}
-                disabled={isLoading}
               >
-                {isLoading ? 'Removing...' : `Remove ${selectedItems.size} Items`}
+                Remove {selectedItems.size} Items
               </button>
             </div>
           </div>
@@ -781,24 +769,20 @@ const CustomerCart = () => {
                     ₱{selectedItems.size > 0 ? getSelectedTotalPrice().toFixed(2) : getTotalPrice().toFixed(2)}
                   </span>
                 </div>
+                {/* REMOVED SHIPPING ROW */}
                 <div className="summary-row">
-                  <span>Shipping:</span>
-                  <span>
-                    ₱{(selectedItems.size > 0 ? selectedItems.size : cartItems.length) > 0 ? '50.00' : '0.00'}
-                  </span>
+                  <span>Discount:</span>
+                  <span>₱0.00</span>
                 </div>
                 <div className="summary-row">
                   <span>Voucher:</span>
-                  <span>
-                    ₱{((selectedItems.size > 0 ? getSelectedTotalPrice() : getTotalPrice()) * 0.12).toFixed(2)}
-                  </span>
+                  <span>₱0.00</span>
                 </div>
                 <div className="summary-row total">
                   <span>Total:</span>
                   <span>
                     ₱{(
-                      (selectedItems.size > 0 ? getSelectedTotalPrice() : getTotalPrice()) * 1.12 + 
-                      ((selectedItems.size > 0 ? selectedItems.size : cartItems.length) > 0 ? 50 : 0)
+                      (selectedItems.size > 0 ? getSelectedTotalPrice() : getTotalPrice())
                     ).toFixed(2)}
                   </span>
                 </div>
@@ -807,14 +791,13 @@ const CustomerCart = () => {
                 <button 
                   className="card-btn" 
                   onClick={handleCheckout}
-                  disabled={cartItems.length === 0 || isLoading || selectedItems.size === 0}
+                  disabled={cartItems.length === 0 || selectedItems.size === 0}
                 >
-                  {isLoading ? 'Processing...' : `Checkout (${selectedItems.size})`}
+                  Checkout ({selectedItems.size})
                 </button>
                 <button 
                   className="card-btn secondary"
                   onClick={handleContinueShopping}
-                  disabled={isLoading}
                 >
                   Continue Shopping
                 </button>

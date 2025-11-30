@@ -10,6 +10,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -26,6 +28,10 @@ public class Cart {
     
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
     
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -42,6 +48,11 @@ public class Cart {
         this();
         this.sessionId = sessionId;
     }
+
+    public Cart(String sessionId, User user) {
+        this(sessionId);
+        this.user = user;
+    }
     
     // Getters and Setters
     public Long getCartId() { return cartId; }
@@ -52,6 +63,9 @@ public class Cart {
     
     public List<CartItem> getCartItems() { return cartItems; }
     public void setCartItems(List<CartItem> cartItems) { this.cartItems = cartItems; }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

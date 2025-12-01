@@ -17,7 +17,6 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin/*" element={<AdminLayout />} />
-        {/* Remove the standalone CustomerDashboard route and only use CustomerLayout */}
         <Route path="/customer/*" element={<CustomerLayout />} />
       </Routes>
     </Router>

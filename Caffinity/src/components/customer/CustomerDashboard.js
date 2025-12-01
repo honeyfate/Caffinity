@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../css/CustomerDashboard.css';
 import logo from '../../images/caffinity-logo.png';
-import { FaUserCircle, FaShoppingCart, FaCoffee, FaCookieBite, FaHome } from 'react-icons/fa';
+import { FaUserCircle, FaShoppingCart, FaCoffee, FaCookieBite, FaHome, FaClipboardList } from 'react-icons/fa';
 
 const CustomerDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
@@ -14,6 +14,7 @@ const CustomerDashboard = () => {
     if (path.includes('/customer/coffee')) return 'coffee';
     if (path.includes('/customer/desserts')) return 'desserts';
     if (path.includes('/customer/cart')) return 'cart';
+    if (path.includes('/customer/orders')) return 'orders'; // Added orders
     if (path.includes('/customer/profile')) return 'profile';
     return 'home';
   }, []);
@@ -47,6 +48,7 @@ const CustomerDashboard = () => {
     { to: "/customer/coffee", section: "coffee", label: "Coffee", icon: <FaCoffee className="nav-icon" /> },
     { to: "/customer/desserts", section: "desserts", label: "Desserts", icon: <FaCookieBite className="nav-icon" /> },
     { to: "/customer/cart", section: "cart", label: "Cart", icon: <FaShoppingCart className="nav-icon" /> },
+    { to: "/customer/orders", section: "orders", label: "My Orders", icon: <FaClipboardList className="nav-icon" /> }, // Added My Orders
     { to: "/customer/profile", section: "profile", label: "Profile", icon: <FaUserCircle className="nav-icon" /> },
   ];
 

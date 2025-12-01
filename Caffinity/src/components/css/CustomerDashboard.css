@@ -165,6 +165,24 @@
   transform: scale(1.1);
 }
 
+.customer-navigation a:hover .fa-clipboard-list,
+.customer-navigation a.customer-active .fa-clipboard-list {
+  color: #ffd700;
+  transform: scale(1.1);
+}
+
+/* Add responsive design adjustments if needed */
+@media (max-width: 1200px) {
+  .customer-navigation {
+    gap: 30px; /* Slightly reduced to accommodate extra item */
+  }
+}
+
+@media (max-width: 1024px) {
+  .customer-navigation {
+    gap: 20px; /* Slightly reduced to accommodate extra item */
+  }
+}
 /* Customer actions section */
 .customer-actions {
   display: flex;

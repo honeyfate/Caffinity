@@ -19,6 +19,12 @@ const CustomerDesserts = () => {
     return sessionId;
   };
 
+  // Get current user (updated to use consistent key)
+  const getCurrentUser = () => {
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
+  };
+
   // Show custom notification
   const showNotification = (message, type = 'success') => {
     setNotification({ show: true, message, type });
@@ -31,15 +37,21 @@ const CustomerDesserts = () => {
   const fetchCart = async () => {
     try {
       const sessionId = getSessionId();
-      const response = await axios.get('http://localhost:8080/api/cart', {
-        headers: { 'X-Session-Id': sessionId }
-      });
+      const user = getCurrentUser();
+      
+      const headers = { 'X-Session-Id': sessionId };
+      if (user && user.userId) {
+        headers['X-User-Id'] = user.userId;
+      }
+
+      const response = await axios.get('http://localhost:8080/api/cart', { headers });
       
       if (response.data && response.data.cartItems) {
         setCartItems(response.data.cartItems || []);
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
+        // Fallback to localStorage if needed
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
           setCartItems(JSON.parse(savedCart));
@@ -47,6 +59,7 @@ const CustomerDesserts = () => {
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
+      // Fallback to localStorage
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
@@ -102,6 +115,7 @@ const CustomerDesserts = () => {
     
     try {
       const sessionId = getSessionId();
+      const user = getCurrentUser();
       
       // USE THE CORRECT PRODUCT ID FIELD
       const productId = product.productId || product.id;
@@ -112,11 +126,17 @@ const CustomerDesserts = () => {
       console.log('Product ID:', productId);
       console.log('Product ID type:', typeof productId);
       console.log('Session ID:', sessionId);
+      console.log('User:', user);
 
       // Validate product ID
       if (!productId || productId === 'undefined' || productId === 'null') {
         console.error('INVALID PRODUCT ID:', productId);
         throw new Error('Invalid product ID');
+      }
+
+      const headers = { 'X-Session-Id': sessionId };
+      if (user && user.userId) {
+        headers['X-User-Id'] = user.userId;
       }
 
       if (isCurrentlyInCart) {
@@ -125,9 +145,7 @@ const CustomerDesserts = () => {
         const deleteUrl = `http://localhost:8080/api/cart/remove/${productId}`;
         console.log('DELETE URL:', deleteUrl);
         
-        await axios.delete(deleteUrl, {
-          headers: { 'X-Session-Id': sessionId }
-        });
+        await axios.delete(deleteUrl, { headers });
         showNotification(`${product.name} removed from cart!`, 'success');
       } else {
         // Add to cart
@@ -140,7 +158,7 @@ const CustomerDesserts = () => {
         
         await axios.post('http://localhost:8080/api/cart/add', 
           requestData,
-          { headers: { 'X-Session-Id': sessionId } }
+          { headers }
         );
         showNotification(`${product.name} added to cart!`, 'success');
       }

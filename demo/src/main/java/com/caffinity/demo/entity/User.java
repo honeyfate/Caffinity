@@ -1,6 +1,13 @@
 package com.caffinity.demo.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -14,7 +21,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
-    private String password;
+    private String password;    
 
     @Column(name = "first_name", nullable = false)
     private String firstName;

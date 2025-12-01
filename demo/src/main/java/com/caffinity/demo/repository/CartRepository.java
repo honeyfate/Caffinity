@@ -9,17 +9,27 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.caffinity.demo.entity.Cart;
+import com.caffinity.demo.entity.User;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
     Optional<Cart> findBySessionId(String sessionId);
     
-    @Modifying
-    @Query("DELETE FROM Cart c WHERE c.sessionId = :sessionId")
-    void deleteBySessionId(@Param("sessionId") String sessionId);
+    // ADD THESE METHODS FOR USER SUPPORT:
+    Optional<Cart> findByUser(User user);
     
     @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.cartItems WHERE c.sessionId = :sessionId")
     Optional<Cart> findBySessionIdWithItems(@Param("sessionId") String sessionId);
+    
+    @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.cartItems WHERE c.user = :user")
+    Optional<Cart> findByUserWithItems(@Param("user") User user);
+    
+    @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.cartItems WHERE c.sessionId = :sessionId OR c.user = :user")
+    Optional<Cart> findBySessionIdOrUserWithItems(@Param("sessionId") String sessionId, @Param("user") User user);
+    
+    @Modifying
+    @Query("DELETE FROM Cart c WHERE c.sessionId = :sessionId")
+    void deleteBySessionId(@Param("sessionId") String sessionId);
     
     // CUSTOM METHODS FOR CUSTOM FIELD NAMES
     @Query("SELECT c FROM Cart c WHERE c.cartId = :cartId")

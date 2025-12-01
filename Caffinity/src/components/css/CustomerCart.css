@@ -1652,3 +1652,55 @@
   font-size: 1rem;
   transition: color 0.2s ease;
 }
+/* Order Summary Preview Styles */
+.order-summary-preview {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f5f2;
+  border-radius: 8px;
+  border: 1px solid #e8d5b5;
+}
+
+.preview-items {
+  margin-bottom: 1rem;
+}
+
+.preview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e8d5b5;
+  font-size: 0.9rem;
+}
+
+.preview-item:last-child {
+  border-bottom: none;
+}
+
+.preview-total {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #2c1a0a;
+  padding-top: 1rem;
+  border-top: 2px solid #8b4513;
+  font-weight: bold;
+}
+
+/* Enhanced Order Details in Confirmation */
+.order-details {
+  background: #f8f5f2;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #8b4513;
+  margin-top: 1rem;
+}
+
+.order-details p {
+  margin: 0.5rem 0;
+  color: #2c1a0a;
+  font-size: 1rem;
+}
+
+.order-details strong {
+  color: #8b4513;
+}

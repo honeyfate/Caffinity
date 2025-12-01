@@ -28,9 +28,11 @@ public class CartController {
     private CartService cartService;
     
     @GetMapping
-    public ResponseEntity<Cart> getCart(@RequestHeader("X-Session-Id") String sessionId) {
+    public ResponseEntity<Cart> getCart(
+            @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) { // CHANGED to required = false
         try {
-            Cart cart = cartService.getOrCreateCart(sessionId);
+            Cart cart = cartService.getOrCreateCart(sessionId, userId);
             return ResponseEntity.ok(cart);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -40,9 +42,10 @@ public class CartController {
     @PostMapping("/add")
     public ResponseEntity<Cart> addToCart(
             @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId, // CHANGED to required = false
             @RequestBody AddToCartRequest request) {
         try {
-            Cart cart = cartService.addToCart(sessionId, request.getProductId(), request.getQuantity());
+            Cart cart = cartService.addToCart(sessionId, request.getProductId(), request.getQuantity(), userId);
             return ResponseEntity.ok(cart);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -52,9 +55,10 @@ public class CartController {
     @PutMapping("/update")
     public ResponseEntity<Cart> updateCartItem(
             @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId, // CHANGED to required = false
             @RequestBody UpdateCartRequest request) {
         try {
-            Cart cart = cartService.updateCartItem(sessionId, request.getProductId(), request.getQuantity());
+            Cart cart = cartService.updateCartItem(sessionId, request.getProductId(), request.getQuantity(), userId);
             return ResponseEntity.ok(cart);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -64,9 +68,10 @@ public class CartController {
     @DeleteMapping("/remove/{productId}")
     public ResponseEntity<Cart> removeFromCart(
             @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId, // CHANGED to required = false
             @PathVariable Long productId) {
         try {
-            Cart cart = cartService.removeFromCart(sessionId, productId);
+            Cart cart = cartService.removeFromCart(sessionId, productId, userId);
             return ResponseEntity.ok(cart);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -74,11 +79,28 @@ public class CartController {
     }
     
     @DeleteMapping("/clear")
-    public ResponseEntity<Map<String, String>> clearCart(@RequestHeader("X-Session-Id") String sessionId) {
+    public ResponseEntity<Map<String, String>> clearCart(
+            @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) { // CHANGED to required = false
         try {
-            cartService.clearCart(sessionId);
+            cartService.clearCart(sessionId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Cart cleared successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // ADD THIS ENDPOINT FOR CART MIGRATION
+    @PostMapping("/migrate")
+    public ResponseEntity<Map<String, String>> migrateCart(
+            @RequestHeader("X-Session-Id") String sessionId,
+            @RequestHeader("X-User-Id") Long userId) {
+        try {
+            cartService.migrateGuestCartToUser(sessionId, userId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Cart migrated successfully");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

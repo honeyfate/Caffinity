@@ -31,6 +31,43 @@ const Login = () => {
     setForm({ ...form, role });
   };
 
+  // ADD THIS FUNCTION: Migrate guest cart to user cart
+  const migrateCartAfterLogin = async (userId) => {
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        console.log('No sessionId found, skipping cart migration');
+        return;
+      }
+
+      console.log('Migrating cart for user:', userId, 'session:', sessionId);
+      
+      await axios.post('http://localhost:8080/api/cart/migrate', 
+        {},
+        { 
+          headers: { 
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId 
+          } 
+        }
+      );
+      console.log('Cart migrated successfully after login');
+    } catch (error) {
+      console.error('Error migrating cart:', error);
+      // Don't show error to user - cart migration failure shouldn't block login
+    }
+  };
+
+  // ADD THIS FUNCTION: Get or create session ID
+  const getSessionId = () => {
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('sessionId', sessionId);
+    }
+    return sessionId;
+  };
+
   const runFadeOutAnimation = () => {
     document.querySelector('.auth-container').classList.add('fade-out');
     document.querySelector('.auth-form-wrapper').classList.add('fade-out');
@@ -97,11 +134,24 @@ const Login = () => {
           return;
         }
         
+        // ENSURE SESSION ID EXISTS BEFORE MIGRATION
+        getSessionId();
+        
         runFadeOutAnimation();
         
+        // MIGRATE CART BEFORE NAVIGATION
+        try {
+          await migrateCartAfterLogin(userData.userId);
+        } catch (migrationError) {
+          console.error('Cart migration failed:', migrationError);
+          // Continue with login even if migration fails
+        }
+        
         setTimeout(() => {
-          localStorage.setItem('user', JSON.stringify(userData));
+          // STORE USER DATA WITH CONSISTENT KEY
+          localStorage.setItem('currentUser', JSON.stringify(userData));
           localStorage.setItem('isLoggedIn', 'true');
+          
           showNotification(`Welcome back, ${userData.firstName}!`, 'success');
           
           if (userData.role === 'ADMIN') {

@@ -10,10 +10,18 @@ const CustomerCart = () => {
   const [productToDelete, setProductToDelete] = useState(null);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [orderId, setOrderId] = useState(null);
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: ''
+  });
+
+  const [paymentInfo, setPaymentInfo] = useState({
+    method: 'CARD',
+    cardNumber: '',
+    expiryDate: '',
+    cvv: ''
   });
 
   // Generate or get session ID
@@ -26,13 +34,28 @@ const CustomerCart = () => {
     return sessionId;
   };
 
+  // Get logged-in user ID (optional - for authenticated users)
+  const getUserId = () => {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      const user = JSON.parse(userData);
+      return user.userId || null;
+    }
+    return null;
+  };
+
   // Load cart from database
   const fetchCart = async () => {
     try {
       const sessionId = getSessionId();
-      const response = await axios.get('http://localhost:8080/api/cart', {
-        headers: { 'X-Session-Id': sessionId }
-      });
+      const userId = getUserId();
+      
+      const headers = { 'X-Session-Id': sessionId };
+      if (userId) {
+        headers['X-User-Id'] = userId;
+      }
+
+      const response = await axios.get('http://localhost:8080/api/cart', { headers });
       
       console.log('Cart API Response:', response.data);
       
@@ -41,6 +64,7 @@ const CustomerCart = () => {
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
+        // Fallback to localStorage if needed
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
           setCartItems(JSON.parse(savedCart));
@@ -50,6 +74,7 @@ const CustomerCart = () => {
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
+      // Fallback to localStorage
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
@@ -60,6 +85,27 @@ const CustomerCart = () => {
   useEffect(() => {
     fetchCart();
   }, []);
+
+  // ADD THIS: Migrate cart when user logs in
+  const migrateCartAfterLogin = async (userId) => {
+    try {
+      const sessionId = getSessionId();
+      await axios.post('http://localhost:8080/api/cart/migrate', 
+        {},
+        { 
+          headers: { 
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId 
+          } 
+        }
+      );
+      console.log('Cart migrated successfully after login');
+      // Refresh cart data after migration
+      fetchCart();
+    } catch (error) {
+      console.error('Error migrating cart:', error);
+    }
+  };
 
   // Safe function to get item name
   const getItemName = (item) => {
@@ -148,11 +194,17 @@ const CustomerCart = () => {
     // Update in database silently in background
     try {
       const sessionId = getSessionId();
+      const userId = getUserId();
       const productId = getProductId(item);
       
+      const headers = { 'X-Session-Id': sessionId };
+      if (userId) {
+        headers['X-User-Id'] = userId;
+      }
+
       await axios.put('http://localhost:8080/api/cart/update', 
         { productId, quantity: newQuantity },
-        { headers: { 'X-Session-Id': sessionId } }
+        { headers }
       );
       
       // Success - no UI feedback needed
@@ -186,12 +238,18 @@ const CustomerCart = () => {
   const removeFromCart = async (cartItemId) => {
     try {
       const sessionId = getSessionId();
+      const userId = getUserId();
       const item = cartItems.find(item => getCartItemId(item) === cartItemId);
       
+      const headers = { 'X-Session-Id': sessionId };
+      if (userId) {
+        headers['X-User-Id'] = userId;
+      }
+
       if (item) {
         const productId = getProductId(item);
         await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers: { 'X-Session-Id': sessionId }
+          headers
         });
       }
       
@@ -243,11 +301,18 @@ const CustomerCart = () => {
     
     // Remove from API in background
     const sessionId = getSessionId();
+    const userId = getUserId();
+    
+    const headers = { 'X-Session-Id': sessionId };
+    if (userId) {
+      headers['X-User-Id'] = userId;
+    }
+
     for (const item of itemsToRemove) {
       const productId = getProductId(item);
       try {
         await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers: { 'X-Session-Id': sessionId }
+          headers
         });
       } catch (error) {
         console.error('Error removing item:', error);
@@ -310,6 +375,68 @@ const CustomerCart = () => {
     console.log('Proceeding to checkout with items:', selectedCartItems);
   };
 
+  // NEW: Handle place order - create order in backend
+  const handlePlaceOrder = async () => {
+    if (selectedItems.size === 0) {
+      alert('Please select at least one item to checkout!');
+      return;
+    }
+
+    if (!customerInfo.name || !customerInfo.phone) {
+      alert('Please fill in customer information');
+      return;
+    }
+
+    try {
+      const sessionId = getSessionId();
+      const userId = getUserId();
+      const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
+      
+      // Prepare order data
+      const orderData = {
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        totalAmount: getSelectedTotalPrice(),
+        orderItems: selectedCartItems.map(item => ({
+          productId: getProductId(item),
+          productName: getItemName(item),
+          quantity: item.quantity,
+          price: getItemPrice(item),
+          totalPrice: getItemPrice(item) * item.quantity
+        })),
+        paymentMethod: paymentInfo.method,
+        paymentStatus: 'COMPLETED'
+      };
+
+      console.log('Sending order data:', orderData);
+
+      const headers = { 'X-Session-Id': sessionId };
+      if (userId) {
+        headers['X-User-Id'] = userId;
+      }
+
+      // Create order
+      const response = await axios.post('http://localhost:8080/api/orders', orderData, {
+        headers
+      });
+
+      console.log('Order created:', response.data);
+
+      // Save order ID for confirmation page
+      setOrderId(response.data.orderId);
+
+      // Remove ordered items from cart
+      await removeSelectedItems();
+      
+      // Move to confirmation step
+      setCurrentStep(4);
+      
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('Failed to place order. Please try again.');
+    }
+  };
+
   // Navigation between steps
   const handleNextStep = () => {
     if (currentStep < 4) {
@@ -328,6 +455,22 @@ const CustomerCart = () => {
     setCustomerInfo(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  // Handle payment info change
+  const handlePaymentInfoChange = (field, value) => {
+    setPaymentInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle payment method change
+  const handlePaymentMethodChange = (method) => {
+    setPaymentInfo(prev => ({
+      ...prev,
+      method: method
     }));
   };
 
@@ -560,14 +703,26 @@ const CustomerCart = () => {
                   <h4 className="form-section-title">Select Payment Method</h4>
                   <div className="payment-methods">
                     <div className="payment-option">
-                      <input type="radio" id="card" name="payment" defaultChecked />
+                      <input 
+                        type="radio" 
+                        id="card" 
+                        name="payment" 
+                        checked={paymentInfo.method === 'CARD'}
+                        onChange={() => handlePaymentMethodChange('CARD')}
+                      />
                       <label htmlFor="card">
                         <FaCreditCard className="payment-icon" />
                         Credit/Debit Card
                       </label>
                     </div>
                     <div className="payment-option">
-                      <input type="radio" id="gcash" name="payment" />
+                      <input 
+                        type="radio" 
+                        id="gcash" 
+                        name="payment" 
+                        checked={paymentInfo.method === 'GCASH'}
+                        onChange={() => handlePaymentMethodChange('GCASH')}
+                      />
                       <label htmlFor="gcash">
                         <FaMobile className="payment-icon" />
                         Gcash
@@ -576,21 +731,60 @@ const CustomerCart = () => {
                   </div>
                 </div>
                 
-                <div className="card-details-section">
-                  <h4 className="form-section-title">Payment Details</h4>
-                  <div className="form-group">
-                    <input type="text" placeholder="Card Number" className="form-input" />
+                {paymentInfo.method === 'CARD' && (
+                  <div className="card-details-section">
+                    <h4 className="form-section-title">Payment Details</h4>
+                    <div className="form-group">
+                      <input 
+                        type="text" 
+                        placeholder="Card Number" 
+                        className="form-input"
+                        value={paymentInfo.cardNumber}
+                        onChange={(e) => handlePaymentInfoChange('cardNumber', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-row">
+                      <input 
+                        type="text" 
+                        placeholder="Expiry Date (MM/YY)" 
+                        className="form-input"
+                        value={paymentInfo.expiryDate}
+                        onChange={(e) => handlePaymentInfoChange('expiryDate', e.target.value)}
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="CVV" 
+                        className="form-input"
+                        value={paymentInfo.cvv}
+                        onChange={(e) => handlePaymentInfoChange('cvv', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="form-row">
-                    <input type="text" placeholder="Expiry Date (MM/YY)" className="form-input" />
-                    <input type="text" placeholder="CVV" className="form-input" />
+                )}
+                
+                {/* Order Summary Preview */}
+                <div className="order-summary-preview">
+                  <h4 className="form-section-title">Order Summary</h4>
+                  <div className="preview-items">
+                    {cartItems
+                      .filter(item => selectedItems.has(getCartItemId(item)))
+                      .map(item => (
+                        <div key={getCartItemId(item)} className="preview-item">
+                          <span>{getItemName(item)} x {item.quantity}</span>
+                          <span>₱{(getItemPrice(item) * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <div className="preview-total">
+                    <strong>Total: ₱{getSelectedTotalPrice().toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
               <div className="card-actions">
                 <button 
                   className="card-btn" 
-                  onClick={handleNextStep}
+                  onClick={handlePlaceOrder}
                 >
                   Place Order
                 </button>
@@ -622,7 +816,10 @@ const CustomerCart = () => {
                   <h3>Order Placed Successfully!</h3>
                   <p>Thank you for your purchase. Your order has been confirmed and you will be notified if it is ready to pick up.</p>
                   <div className="order-details">
-                    <p><strong>Order ID:</strong> #ORD-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                    <p><strong>Order ID:</strong> #{orderId || Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                    <p><strong>Customer Name:</strong> {customerInfo.name}</p>
+                    <p><strong>Phone:</strong> {customerInfo.phone}</p>
+                    <p><strong>Total Amount:</strong> ₱{getSelectedTotalPrice().toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -633,6 +830,8 @@ const CustomerCart = () => {
                     setCurrentStep(1);
                     setSelectedItems(new Set());
                     setCustomerInfo({ name: '', phone: '' });
+                    setPaymentInfo({ method: 'CARD', cardNumber: '', expiryDate: '', cvv: '' });
+                    setOrderId(null);
                     fetchCart();
                   }}
                 >

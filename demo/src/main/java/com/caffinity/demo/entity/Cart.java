@@ -30,7 +30,7 @@ public class Cart {
     private List<CartItem> cartItems = new ArrayList<>();
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = true)
+    @JoinColumn(name = "user_id", nullable = true) // CHANGED TO nullable = true
     private User user;
     
     @Column(nullable = false)
@@ -47,10 +47,12 @@ public class Cart {
     public Cart(String sessionId) {
         this();
         this.sessionId = sessionId;
+        this.user = null; // Explicitly set user as null for guest
     }
 
     public Cart(String sessionId, User user) {
-        this(sessionId);
+        this();
+        this.sessionId = sessionId;
         this.user = user;
     }
     

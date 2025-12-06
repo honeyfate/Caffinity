@@ -16,6 +16,7 @@ import com.caffinity.demo.entity.User;
 import com.caffinity.demo.repository.CartRepository;
 import com.caffinity.demo.repository.OrderItemRepository;
 import com.caffinity.demo.repository.OrderRepository;
+import com.caffinity.demo.repository.ProductRepository;
 import com.caffinity.demo.repository.UserRepository;
 
 @Service
@@ -32,6 +33,66 @@ public class OrderService {
 
     @Autowired
     private CartRepository cartRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    // Create order from frontend with customer info and order items
+    @Transactional
+    public Order createOrderFromFrontend(Long userId, com.caffinity.demo.controller.OrderController.CreateOrderRequest request) {
+        System.out.println("🔄 Creating order from frontend for user ID: " + userId);
+        
+        try {
+            User user = null;
+            if (userId != null) {
+                user = userRepository.findByUserId(userId)
+                        .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            }
+            
+            // Create new order
+            Order order = new Order();
+            if (user != null) {
+                order.setUser(user);
+            }
+            order.setStatus(OrderStatus.PENDING);
+            order.setTotalAmount(request.getTotalAmount());
+            
+            // Add order items from frontend
+            if (request.getOrderItems() != null && !request.getOrderItems().isEmpty()) {
+                for (com.caffinity.demo.controller.OrderController.OrderItemData itemData : request.getOrderItems()) {
+                    OrderItem orderItem = new OrderItem();
+                    
+                    // Fetch the product by ID
+                    orderItem.setProduct(productRepository.findByProductId(itemData.getProductId())
+                            .orElseThrow(() -> new RuntimeException("Product not found with id: " + itemData.getProductId())));
+                    
+                    orderItem.setQuantity(itemData.getQuantity());
+                    orderItem.setUnitPrice(itemData.getPrice());
+                    order.addOrderItem(orderItem);
+                }
+            }
+            
+            // Save order
+            Order savedOrder = orderRepository.save(order);
+            System.out.println("✅ Order created successfully with ID: " + savedOrder.getOrderId());
+            
+            // Clear user's cart after successful order creation (if user exists)
+            if (user != null) {
+                Optional<Cart> userCart = cartRepository.findByUserWithItems(user);
+                if (userCart.isPresent()) {
+                    cartRepository.delete(userCart.get());
+                    System.out.println("🛒 User cart cleared after order creation");
+                }
+            }
+            
+            return savedOrder;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error creating order from frontend: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create order: " + e.getMessage(), e);
+        }
+    }
 
     // Create order from cart - UPDATED
     @Transactional

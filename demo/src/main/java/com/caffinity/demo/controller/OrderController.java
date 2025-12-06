@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +27,22 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+
+    // NEW: Create order from frontend with customer info and order items
+    @PostMapping
+    public ResponseEntity<?> createOrder(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestBody CreateOrderRequest request) {
+        try {
+            System.out.println("🔄 Received order creation request from frontend for user: " + userId);
+            Order order = orderService.createOrderFromFrontend(userId, request);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            System.err.println("❌ Error creating order: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Error creating order: " + e.getMessage());
+        }
+    }
 
     // Create new order from cart - UPDATED
     @PostMapping("/create")
@@ -139,5 +157,59 @@ public class OrderController {
             System.err.println("❌ Error fetching recent orders: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // DTO for create order request from frontend
+    public static class CreateOrderRequest {
+        private String customerName;
+        private String customerPhone;
+        private Double totalAmount;
+        private java.util.List<OrderItemData> orderItems;
+        private String paymentMethod;
+        private String paymentStatus;
+
+        // Getters and Setters
+        public String getCustomerName() { return customerName; }
+        public void setCustomerName(String customerName) { this.customerName = customerName; }
+
+        public String getCustomerPhone() { return customerPhone; }
+        public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+
+        public Double getTotalAmount() { return totalAmount; }
+        public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+
+        public java.util.List<OrderItemData> getOrderItems() { return orderItems; }
+        public void setOrderItems(java.util.List<OrderItemData> orderItems) { this.orderItems = orderItems; }
+
+        public String getPaymentMethod() { return paymentMethod; }
+        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+        public String getPaymentStatus() { return paymentStatus; }
+        public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    }
+
+    // DTO for order items within the request
+    public static class OrderItemData {
+        private Long productId;
+        private String productName;
+        private Integer quantity;
+        private Double price;
+        private Double totalPrice;
+
+        // Getters and Setters
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
+
+        public String getProductName() { return productName; }
+        public void setProductName(String productName) { this.productName = productName; }
+
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+        public Double getPrice() { return price; }
+        public void setPrice(Double price) { this.price = price; }
+
+        public Double getTotalPrice() { return totalPrice; }
+        public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
     }
 }

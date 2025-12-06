@@ -26,7 +26,7 @@ public class Order {
     private Long orderId;
     
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
     
     @Column(nullable = false)
@@ -52,11 +52,6 @@ public class Order {
 
     private String transactionId;
 
-    private String paymentDetails;
-
-    private LocalDateTime paymentDate;
-
-    private LocalDateTime paymentProcessedAt;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
     
@@ -64,7 +59,6 @@ public class Order {
     public Order() {
         this.orderDate = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.paymentDate = null;
     }
     
     public Order(User user, Double totalAmount) {
@@ -113,37 +107,6 @@ public class Order {
 
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
-
-    public String getPaymentDetails() { return paymentDetails; }
-    public void setPaymentDetails(String paymentDetails) { this.paymentDetails = paymentDetails; }
-
-    public LocalDateTime getPaymentDate() { return paymentDate; }
-    public void setPaymentDate(LocalDateTime paymentDate) { this.paymentDate = paymentDate; }
-
-    public LocalDateTime getPaymentProcessedAt() { return paymentProcessedAt; }
-    public void setPaymentProcessedAt(LocalDateTime paymentProcessedAt) { this.paymentProcessedAt = paymentProcessedAt; }
-
-    // Convenience methods for payment flow
-    public void initiatePayment(PaymentMethod method, Double amount) {
-        this.paymentMethod = method;
-        this.paymentAmount = amount;
-        this.paymentStatus = PaymentStatus.PENDING;
-        this.paymentDate = LocalDateTime.now();
-        this.setStatus(OrderStatus.PAYMENT_PENDING);
-    }
-
-    public void completePayment(String transactionId) {
-        this.paymentStatus = PaymentStatus.COMPLETED;
-        this.transactionId = transactionId;
-        this.paymentProcessedAt = LocalDateTime.now();
-        this.setStatus(OrderStatus.CONFIRMED);
-    }
-
-    public void failPayment() {
-        this.paymentStatus = PaymentStatus.FAILED;
-        this.paymentProcessedAt = LocalDateTime.now();
-        this.setStatus(OrderStatus.PAYMENT_FAILED);
-    }
     
     // Helper methods
     public void addOrderItem(OrderItem orderItem) {

@@ -376,66 +376,93 @@ const CustomerCart = () => {
   };
 
   // NEW: Handle place order - create order in backend
-  const handlePlaceOrder = async () => {
-    if (selectedItems.size === 0) {
-      alert('Please select at least one item to checkout!');
-      return;
-    }
+  // In CustomerCart.js, update the handlePlaceOrder function:
 
-    if (!customerInfo.name || !customerInfo.phone) {
-      alert('Please fill in customer information');
-      return;
-    }
+const handlePlaceOrder = async () => {
+  if (selectedItems.size === 0) {
+    alert('Please select at least one item to checkout!');
+    return;
+  }
 
-    try {
-      const sessionId = getSessionId();
-      const userId = getUserId();
-      const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
-      
-      // Prepare order data
-      const orderData = {
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        totalAmount: getSelectedTotalPrice(),
-        orderItems: selectedCartItems.map(item => ({
-          productId: getProductId(item),
-          productName: getItemName(item),
-          quantity: item.quantity,
-          price: getItemPrice(item),
-          totalPrice: getItemPrice(item) * item.quantity
-        })),
-        paymentMethod: paymentInfo.method,
-        paymentStatus: 'COMPLETED'
-      };
+  if (!customerInfo.name || !customerInfo.phone) {
+    alert('Please fill in customer information');
+    return;
+  }
 
-      console.log('Sending order data:', orderData);
-
-      const headers = { 'X-Session-Id': sessionId };
-      if (userId) {
-        headers['X-User-Id'] = userId;
+  try {
+    const sessionId = getSessionId();
+    const userId = getUserId();
+    const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
+    
+    // FIX: Map frontend payment method to backend enum
+    const getBackendPaymentMethod = (frontendMethod) => {
+      if (frontendMethod === 'CARD') {
+        return 'CREDIT_CARD';  // Map 'CARD' to 'CREDIT_CARD'
       }
+      return frontendMethod;   // 'GCASH' stays as 'GCASH'
+    };
+    
+    // FIXED: Prepare order data with proper payment values
+    const orderData = {
+      customerName: customerInfo.name,
+      customerPhone: customerInfo.phone,
+      totalAmount: getSelectedTotalPrice(),
+      orderItems: selectedCartItems.map(item => ({
+        productId: getProductId(item),
+        productName: getItemName(item),
+        quantity: item.quantity,
+        price: getItemPrice(item),
+        totalPrice: getItemPrice(item) * item.quantity
+      })),
+      // FIX: Send correct enum values
+      paymentMethod: getBackendPaymentMethod(paymentInfo.method),
+      // FIX: Always send 'PENDING' as initial status
+      paymentStatus: 'PENDING'
+    };
 
-      // Create order
-      const response = await axios.post('http://localhost:8080/api/orders', orderData, {
-        headers
-      });
+    // ===== DEBUGGING LOGS =====
+    console.log('🔍 DEBUG: Full orderData being sent:');
+    console.log(JSON.stringify(orderData, null, 2));
+    console.log('🔍 paymentMethod value:', orderData.paymentMethod);
+    console.log('🔍 paymentMethod type:', typeof orderData.paymentMethod);
+    console.log('🔍 paymentStatus value:', orderData.paymentStatus);
+    console.log('💰 Sending order data:', {
+      frontendPaymentMethod: paymentInfo.method,
+      backendPaymentMethod: orderData.paymentMethod,
+      paymentStatus: orderData.paymentStatus,
+      totalAmount: orderData.totalAmount
+    });
+    // ===== END DEBUGGING =====
 
-      console.log('Order created:', response.data);
-
-      // Save order ID for confirmation page
-      setOrderId(response.data.orderId);
-
-      // Remove ordered items from cart
-      await removeSelectedItems();
-      
-      // Move to confirmation step
-      setCurrentStep(4);
-      
-    } catch (error) {
-      console.error('Error creating order:', error);
-      alert('Failed to place order. Please try again.');
+    const headers = { 'X-Session-Id': sessionId };
+    if (userId) {
+      headers['X-User-Id'] = userId;
     }
-  };
+
+    // Create order
+    const response = await axios.post('http://localhost:8080/api/orders', orderData, {
+      headers
+    });
+
+    console.log('✅ Order created:', response.data);
+    console.log('💰 Saved Payment Method:', response.data.paymentMethod);
+    console.log('💰 Saved Transaction ID:', response.data.transactionId);
+
+    // Save order ID for confirmation page
+    setOrderId(response.data.orderId);
+
+    // Remove ordered items from cart
+    await removeSelectedItems();
+    
+    // Move to confirmation step
+    setCurrentStep(4);
+    
+  } catch (error) {
+    console.error('❌ Error creating order:', error);
+    console.error('❌ Error response:', error.response?.data);
+    alert('Failed to place order. Please try again.');
+  }
+};
 
   // Navigation between steps
   const handleNextStep = () => {

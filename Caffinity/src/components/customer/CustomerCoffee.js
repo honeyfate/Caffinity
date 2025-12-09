@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaCartPlus, FaCheck, FaShoppingCart } from 'react-icons/fa';
+import { FaCartPlus, FaCheck, FaSearch, FaTimes } from 'react-icons/fa';
 import '../css/CustomerCoffee.css';
 
 const CustomerCoffee = () => {
   const [coffeeProducts, setCoffeeProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
@@ -90,6 +92,7 @@ const CustomerCoffee = () => {
         imageUrl: product.imageUrl || getPlaceholderImage(product.name)
       }));
       setCoffeeProducts(productsWithImages);
+      setFilteredProducts(productsWithImages); // Initialize filtered products
     } catch (error) {
       console.error('Error fetching coffee products:', error);
     }
@@ -103,6 +106,28 @@ const CustomerCoffee = () => {
   useEffect(() => {
     fetchCoffeeProducts();
   }, []);
+
+  // Handle search functionality - ONLY by product name
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    
+    if (query.trim() === '') {
+      setFilteredProducts(coffeeProducts);
+    } else {
+      // Filter ONLY by product name
+      const filtered = coffeeProducts.filter(product => 
+        product.name.toLowerCase().includes(query)
+      );
+      setFilteredProducts(filtered);
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    setFilteredProducts(coffeeProducts);
+  };
 
   // Toggle cart item - add if not present, remove if present
   const toggleCartItem = async (product) => {
@@ -251,17 +276,58 @@ const CustomerCoffee = () => {
         <div className="header-content">
           <h1>Our Coffee Selection</h1>
           <p className="section-subtitle">Discover our premium coffee varieties crafted with passion</p>
+          
+          {/* Minimal Search Bar */}
+          <div className="search-minimal-container">
+            <div className="search-minimal-wrapper">
+              <FaSearch className="search-minimal-icon" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearch}
+                placeholder="Search by coffee name..."
+                className="search-minimal-input"
+                aria-label="Search coffee products by name"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={clearSearch} 
+                  className="search-minimal-clear"
+                  aria-label="Clear search"
+                >
+                  <FaTimes className="clear-minimal-icon" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="search-minimal-info">
+                Found {filteredProducts.length} coffee{filteredProducts.length !== 1 ? 's' : ''} matching "{searchQuery}"
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Products Grid */}
       <div className="products-grid">
-        {coffeeProducts.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <div className="no-products">
-            <p>No coffee products available at the moment. Please check back later!</p>
+            {searchQuery ? (
+              <>
+                <p className="no-results-message">
+                  No coffee found for "<strong>{searchQuery}</strong>"
+                </p>
+                <p className="suggestion">Try searching by coffee name only</p>
+                <button onClick={clearSearch} className="clear-search-btn-minimal">
+                  Clear Search & Show All
+                </button>
+              </>
+            ) : (
+              <p>No coffee products available at the moment. Please check back later!</p>
+            )}
           </div>
         ) : (
-          coffeeProducts.map(product => (
+          filteredProducts.map(product => (
             <div key={product.id} className="product-card">
               <div className="product-image">
                 <img 

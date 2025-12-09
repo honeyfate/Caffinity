@@ -143,12 +143,6 @@
     opacity: 0;
 }
 
-.role-selection.fade-out {
-    transition-delay: 0.05s;
-    transform: translateX(-10px);
-    opacity: 0;
-}
-
 .auth-form input {
     padding: 1rem 1rem 1rem 3.2rem;
     font-size: 0.95rem;
@@ -359,7 +353,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin-left: 0.25rem;
-  display: inline; /* ✅ Ensures it's on the same line */
+  display: inline;
 }
 
 .create-account-link:hover {
@@ -378,6 +372,7 @@
   display: inline-block;
   margin-right: 8px;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -386,6 +381,7 @@
     opacity: 1;
   }
 }
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -400,118 +396,4 @@
 .form-group input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
-}
-
-/* Role Selection Styles */
-.role-selection {
-  margin-bottom: 1.5rem;
-  transition: all 0.5s ease-in-out;
-}
-
-.role-label {
-  display: block;
-  margin-bottom: 0.8rem;
-  font-weight: 500;
-  color: #3e2723;
-  font-size: 0.95rem;
-  transition: all 0.5s ease-in-out;
-}
-
-.role-label.fade-out {
-    opacity: 0;
-    transform: translateY(-5px);
-}
-
-.role-options {
-  display: flex;
-  gap: 0.8rem;
-  width: 100%;
-  transition: all 0.5s ease-in-out;
-}
-
-.role-options.fade-out {
-    opacity: 0;
-    transform: translateY(-5px);
-}
-
-.role-option {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 0.8rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.role-option:hover:not(:disabled) {
-  border-color: #3e2723;
-  background: #faf5f0;
-  color: #3e2723;
-  transform: translateY(-2px);
-}
-
-.role-option.role-active {
-  border-color: #8B4513;
-  background: #faf5f0;
-  color: #8B4513;
-  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.15);
-}
-
-.role-option:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.role-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.2rem;
-  transition: all 0.3s ease;
-  filter: sepia(1) saturate(3) hue-rotate(-10deg); /* Brown color filter */
-}
-
-.role-option:hover:not(:disabled) .role-icon {
-  filter: sepia(1) saturate(4) hue-rotate(-15deg) brightness(0.9); /* Darker brown on hover */
-}
-
-.role-option.role-active .role-icon {
-  filter: sepia(1) saturate(5) hue-rotate(-20deg) brightness(0.8); /* Even darker brown when active */
-  transform: scale(1.1);
-}
-
-.role-option.fade-out .role-icon {
-    transform: scale(0.8);
-    opacity: 0;
-}
-
-/* Adjust form spacing for new role selection */
-.auth-form {
-  gap: 1.2rem; /* Reduced gap to accommodate role selection */
-}
-
-/* Responsive design for role selection */
-@media (max-width: 480px) {
-  .role-options {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .role-option {
-    flex-direction: row;
-    justify-content: center;
-    padding: 0.8rem;
-  }
-  
-  .role-icon {
-    margin-bottom: 0;
-    margin-right: 0.5rem;
-    font-size: 1.3rem;
-  }
 }

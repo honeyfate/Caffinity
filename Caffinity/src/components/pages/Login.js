@@ -9,8 +9,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: '',
-    password: '',
-    role: 'customer'
+    password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -25,10 +24,6 @@ const Login = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleRoleChange = (role) => {
-    setForm({ ...form, role });
   };
 
   // ADD THIS FUNCTION: Migrate guest cart to user cart
@@ -78,9 +73,6 @@ const Login = () => {
     document.querySelector('.auth-form').classList.add('fade-out');
     document.querySelector('.back-button').classList.add('fade-out');
     document.querySelector('.register-text').classList.add('fade-out');
-    document.querySelector('.role-selection').classList.add('fade-out');
-    document.querySelector('.role-label').classList.add('fade-out');
-    document.querySelector('.role-options').classList.add('fade-out');
     
     const formGroups = document.querySelectorAll('.form-group');
     formGroups.forEach(group => group.classList.add('fade-out'));
@@ -122,18 +114,6 @@ const Login = () => {
       if (response.status === 200) {
         const userData = response.data.user;
         
-        if (form.role === 'admin' && userData.role !== 'ADMIN') {
-          showNotification('You do not have admin privileges. Please select Customer role.', 'error');
-          setIsLoading(false);
-          return;
-        }
-
-        if (form.role === 'customer' && userData.role === 'ADMIN') {
-          showNotification('You are logging in as an admin account. Please select Admin role.', 'error');
-          setIsLoading(false);
-          return;
-        }
-        
         // ENSURE SESSION ID EXISTS BEFORE MIGRATION
         getSessionId();
         
@@ -154,6 +134,7 @@ const Login = () => {
           
           showNotification(`Welcome back, ${userData.firstName}!`, 'success');
           
+          // Automatically navigate based on user role from backend
           if (userData.role === 'ADMIN') {
             navigate('/admin');
           } else {
@@ -219,31 +200,6 @@ const Login = () => {
             <img src={caffinityLogo} alt="Caffinity Logo" className="logo-icon" />
             <h1 className="app-title">CAFFINITY</h1>
             <p className="app-slogan">Welcome back to our coffee community</p>
-          </div>
-
-          {/* Role Selection */}
-          <div className="form-group role-selection">
-            <label className="role-label">Login as:</label>
-            <div className="role-options">
-              <button
-                type="button"
-                className={`role-option ${form.role === 'customer' ? 'role-active' : ''}`}
-                onClick={() => handleRoleChange('customer')}
-                disabled={isLoading}
-              >
-                <div className="role-icon">👤</div>
-                <span>Customer</span>
-              </button>
-              <button
-                type="button"
-                className={`role-option ${form.role === 'admin' ? 'role-active' : ''}`}
-                onClick={() => handleRoleChange('admin')}
-                disabled={isLoading}
-              >
-                <div className="role-icon">👑</div>
-                <span>Admin</span>
-              </button>
-            </div>
           </div>
 
           <div className="form-group">

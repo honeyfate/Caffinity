@@ -86,8 +86,6 @@ const CustomerHome = () => {
         style={{ 
           backgroundImage: `url(${cafeHomeBg})`,
           backgroundSize: 'cover',
-          marginTop: '-60px',
-          marginLeft: '-60px',
         }}
       >
         <div className="home-content">

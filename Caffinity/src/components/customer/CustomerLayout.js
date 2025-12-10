@@ -15,7 +15,7 @@ const CustomerLayout = () => {
       <main className="customer-main-content">
         <Routes>
           <Route path="/" element={<CustomerHome />} />
-          <Route path="/coffee" element={<CustomerCoffee />} />
+          <Route path="/coffee" element={<div className="coffee-page-background"><CustomerCoffee /></div>} />
           <Route path="/desserts" element={<CustomerDesserts />} />
           <Route path="/cart" element={<CustomerCart />} />
           <Route path="/orders" element={<CustomerOrders />} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaCartPlus, FaCheck, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaCartPlus, FaCheck, FaSearch, FaTimes, FaChevronDown } from 'react-icons/fa';
 import '../css/CustomerCoffee.css';
 
 const CustomerCoffee = () => {
@@ -10,6 +10,11 @@ const CustomerCoffee = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Category options
+  const categories = ['All Categories', 'Hot Coffee', 'Iced Coffee', 'Specialty Coffee', 'Seasonal'];
 
   // Generate or get session ID
   const getSessionId = () => {
@@ -113,13 +118,13 @@ const CustomerCoffee = () => {
     setSearchQuery(query);
     
     if (query.trim() === '') {
-      setFilteredProducts(coffeeProducts);
+      applyFilters(selectedCategory, coffeeProducts);
     } else {
       // Filter ONLY by product name
       const filtered = coffeeProducts.filter(product => 
         product.name.toLowerCase().includes(query)
       );
-      setFilteredProducts(filtered);
+      applyFilters(selectedCategory, filtered);
     }
   };
 
@@ -127,6 +132,27 @@ const CustomerCoffee = () => {
   const clearSearch = () => {
     setSearchQuery('');
     setFilteredProducts(coffeeProducts);
+    setSelectedCategory('All Categories');
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryDropdown(false);
+    applyFilters(category, coffeeProducts);
+  };
+
+  // Apply filters based on category and search
+  const applyFilters = (category, products) => {
+    let filtered = products;
+    
+    if (category !== 'All Categories') {
+      filtered = filtered.filter(product => 
+        product.category && product.category.toLowerCase().includes(category.toLowerCase())
+      );
+    }
+    
+    setFilteredProducts(filtered);
   };
 
   // Toggle cart item - add if not present, remove if present
@@ -257,27 +283,57 @@ const CustomerCoffee = () => {
   };
 
   return (
-    <div className="customer-coffee-section">
-      {/* Custom Notification */}
-      {notification.show && (
-        <div className={`custom-notification ${notification.type}`}>
-          <div className="notification-content">
-            <div className="notification-icon">
-              {notification.type === 'success' ? <FaCheck /> : '⚠'}
-            </div>
-            <div className="notification-message">{notification.message}</div>
+  <div className="customer-coffee-section">
+    {/* Custom Notification */}
+    {notification.show && (
+      <div className={`custom-notification ${notification.type}`}>
+        <div className="notification-content">
+          <div className="notification-icon">
+            {notification.type === 'success' ? <FaCheck /> : '⚠'}
           </div>
-          <div className="notification-progress"></div>
+          <div className="notification-message">{notification.message}</div>
         </div>
-      )}
+        <div className="notification-progress"></div>
+      </div>
+    )}
 
-      {/* Header */}
-      <div className="coffee-section-header">
-        <div className="header-content">
-          <h1>Our Coffee Selection</h1>
-          <p className="section-subtitle">Discover our premium coffee varieties crafted with passion</p>
-          
-          {/* Minimal Search Bar */}
+    {/* Header */}
+    <div className="coffee-section-header">
+      <div className="header-content">
+        <h1 className="section-title">Our Coffee Selection</h1>
+        
+        {/* Filter and Search Container */}
+        <div className="filters-search-container">
+          {/* Category Filter Dropdown - REMOVED the extra wrapper */}
+          <div 
+            className="category-filter-container"
+            onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+          >
+            <div className="category-filter-selected">
+              <span className="filter-label">Category:</span>
+              <span className="filter-value">{selectedCategory}</span>
+              <FaChevronDown className={`dropdown-arrow ${showCategoryDropdown ? 'rotated' : ''}`} />
+            </div>
+            
+            {showCategoryDropdown && (
+              <div className="category-dropdown">
+                {categories.map((category) => (
+                  <div
+                    key={category}
+                    className={`dropdown-item ${selectedCategory === category ? 'selected' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategorySelect(category);
+                    }}
+                  >
+                    {category}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Search Bar */}
           <div className="search-minimal-container">
             <div className="search-minimal-wrapper">
               <FaSearch className="search-minimal-icon" />
@@ -299,27 +355,24 @@ const CustomerCoffee = () => {
                 </button>
               )}
             </div>
-            {searchQuery && (
-              <div className="search-minimal-info">
-                Found {filteredProducts.length} coffee{filteredProducts.length !== 1 ? 's' : ''} matching "{searchQuery}"
-              </div>
-            )}
+            {/* REMOVED the search-minimal-info div to eliminate the popup */}
           </div>
         </div>
       </div>
+    </div>
 
       {/* Products Grid */}
       <div className="products-grid">
         {filteredProducts.length === 0 ? (
           <div className="no-products">
-            {searchQuery ? (
+            {searchQuery || selectedCategory !== 'All Categories' ? (
               <>
                 <p className="no-results-message">
-                  No coffee found for "<strong>{searchQuery}</strong>"
+                  No coffee found for "{searchQuery}" {selectedCategory !== 'All Categories' && `in ${selectedCategory}`}
                 </p>
-                <p className="suggestion">Try searching by coffee name only</p>
+                <p className="suggestion">Try a different search term or category</p>
                 <button onClick={clearSearch} className="clear-search-btn-minimal">
-                  Clear Search & Show All
+                  Clear Filters & Show All
                 </button>
               </>
             ) : (
@@ -343,7 +396,7 @@ const CustomerCoffee = () => {
               </div>
               
               <div className="product-info">
-                <h3>{product.name}</h3>
+                <h3 className="product-name">{product.name}</h3>
                 <p className="product-description">{product.description}</p>
                 <div className="product-price">₱{parseFloat(product.price).toFixed(2)}</div>
                 

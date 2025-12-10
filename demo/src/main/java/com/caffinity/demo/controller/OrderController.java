@@ -1,8 +1,8 @@
 package com.caffinity.demo.controller;
-
+ 
 import java.util.List;
 import java.util.Optional;
-
+ 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -15,19 +15,20 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+ 
 import com.caffinity.demo.entity.Order;
 import com.caffinity.demo.entity.OrderStatus;
+import com.caffinity.demo.entity.PaymentMethod;
 import com.caffinity.demo.service.OrderService;
-
+ 
 @RestController
 @RequestMapping("/api/orders")
 @CrossOrigin(origins = "http://localhost:3000")
 public class OrderController {
-
+ 
     @Autowired
     private OrderService orderService;
-
+ 
     // NEW: Create order from frontend with customer info and order items
     @PostMapping
     public ResponseEntity<?> createOrder(
@@ -35,6 +36,43 @@ public class OrderController {
             @RequestBody CreateOrderRequest request) {
         try {
             System.out.println("🔄 Received order creation request from frontend for user: " + userId);
+           
+            // DEBUG: Log incoming request data
+            System.out.println("📦 Request Data Received:");
+            System.out.println("📦 Customer Name: " + request.getCustomerName());
+            System.out.println("📦 Customer Phone: " + request.getCustomerPhone());
+            System.out.println("📦 Total Amount: " + request.getTotalAmount());
+            System.out.println("📦 Payment Method: " + request.getPaymentMethod());
+            System.out.println("📦 Payment Status: " + request.getPaymentStatus());
+            System.out.println("📦 Order Items Count: " +
+                (request.getOrderItems() != null ? request.getOrderItems().size() : 0));
+           
+            // Validate required fields
+            if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Customer name is required");
+            }
+            if (request.getCustomerPhone() == null || request.getCustomerPhone().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Customer phone is required");
+            }
+            if (request.getTotalAmount() == null || request.getTotalAmount() <= 0) {
+                return ResponseEntity.badRequest().body("Valid total amount is required");
+            }
+           
+            // Log payment method validation
+            if (request.getPaymentMethod() != null) {
+                System.out.println("💳 Raw payment method from frontend: '" + request.getPaymentMethod() + "'");
+                try {
+                    // Try to convert to enum to validate
+                    String paymentMethodStr = request.getPaymentMethod().toUpperCase().replace(" ", "_");
+                    PaymentMethod paymentMethod = PaymentMethod.valueOf(paymentMethodStr);
+                    System.out.println("✅ Valid payment method: " + paymentMethod);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("⚠️ Invalid payment method from frontend: " + request.getPaymentMethod());
+                }
+            } else {
+                System.out.println("⚠️ No payment method received from frontend");
+            }
+           
             Order order = orderService.createOrderFromFrontend(userId, request);
             return ResponseEntity.ok(order);
         } catch (Exception e) {
@@ -43,7 +81,7 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Error creating order: " + e.getMessage());
         }
     }
-
+ 
     // Create new order from cart - UPDATED
     @PostMapping("/create")
     public ResponseEntity<?> createOrderFromCart(
@@ -57,24 +95,40 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Error creating order: " + e.getMessage());
         }
     }
-
+ 
     // Get all orders (for admin)
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         try {
             List<Order> orders = orderService.getAllOrders();
+            System.out.println("📋 Returning " + orders.size() + " orders");
+           
+            // Debug: Check payment data in returned orders
+            if (!orders.isEmpty()) {
+                System.out.println("🔍 Sample order payment data:");
+                orders.stream().limit(3).forEach(order -> {
+                    System.out.println("   Order ID: " + order.getOrderId() +
+                                     ", Payment Method: " + order.getPaymentMethod() +
+                                     ", Transaction ID: " + order.getTransactionId());
+                });
+            }
+           
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             System.err.println("❌ Error fetching orders: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // Get order by ID
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         try {
             Optional<Order> order = orderService.getOrderByIdWithItems(id);
+            if (order.isPresent()) {
+                System.out.println("🔍 Retrieved order ID: " + id +
+                                 ", Payment Method: " + order.get().getPaymentMethod());
+            }
             return order.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -82,19 +136,29 @@ public class OrderController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // Get orders by user ID
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Order>> getOrdersByUserId(@PathVariable Long userId) {
         try {
             List<Order> orders = orderService.getOrdersByUserId(userId);
+            System.out.println("📋 Returning " + orders.size() + " orders for user: " + userId);
+           
+            // Debug: Check payment data
+            orders.forEach(order -> {
+                System.out.println("   Order ID: " + order.getOrderId() +
+                                 ", Payment: " + order.getPaymentMethod() +
+                                 ", Status: " + order.getPaymentStatus() +
+                                 ", TXN: " + order.getTransactionId());
+            });
+           
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             System.err.println("❌ Error fetching user orders: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // Get orders by status
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable OrderStatus status) {
@@ -106,7 +170,7 @@ public class OrderController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // Update order status
     @PutMapping("/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
@@ -121,7 +185,7 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Error updating order status: " + e.getMessage());
         }
     }
-
+ 
     // Cancel order
     @PutMapping("/{orderId}/cancel")
     public ResponseEntity<?> cancelOrder(@PathVariable Long orderId) {
@@ -134,7 +198,7 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Error cancelling order: " + e.getMessage());
         }
     }
-
+ 
     // Get order statistics (for admin dashboard)
     @GetMapping("/statistics")
     public ResponseEntity<OrderService.OrderStatistics> getOrderStatistics() {
@@ -146,7 +210,7 @@ public class OrderController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // Get recent orders
     @GetMapping("/recent")
     public ResponseEntity<List<Order>> getRecentOrders() {
@@ -158,36 +222,57 @@ public class OrderController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+ 
     // DTO for create order request from frontend
-    public static class CreateOrderRequest {
-        private String customerName;
-        private String customerPhone;
-        private Double totalAmount;
-        private java.util.List<OrderItemData> orderItems;
-        private String paymentMethod;
-        private String paymentStatus;
-
-        // Getters and Setters
-        public String getCustomerName() { return customerName; }
-        public void setCustomerName(String customerName) { this.customerName = customerName; }
-
-        public String getCustomerPhone() { return customerPhone; }
-        public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
-
-        public Double getTotalAmount() { return totalAmount; }
-        public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
-
-        public java.util.List<OrderItemData> getOrderItems() { return orderItems; }
-        public void setOrderItems(java.util.List<OrderItemData> orderItems) { this.orderItems = orderItems; }
-
-        public String getPaymentMethod() { return paymentMethod; }
-        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
-
-        public String getPaymentStatus() { return paymentStatus; }
-        public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    // In OrderController.java, update the CreateOrderRequest class:
+ 
+public static class CreateOrderRequest {
+    private String customerName;
+    private String customerPhone;
+    private Double totalAmount;
+    private java.util.List<OrderItemData> orderItems;
+    private String paymentMethod;
+    private String paymentStatus;
+    private String transactionId;  // ADD THIS LINE
+   
+    // Getters and Setters
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+   
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+   
+    public Double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+   
+    public java.util.List<OrderItemData> getOrderItems() { return orderItems; }
+    public void setOrderItems(java.util.List<OrderItemData> orderItems) { this.orderItems = orderItems; }
+   
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+   
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+   
+    // ADD THESE TWO METHODS:
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+   
+    // toString for debugging
+    @Override
+    public String toString() {
+        return "CreateOrderRequest{" +
+                "customerName='" + customerName + '\'' +
+                ", customerPhone='" + customerPhone + '\'' +
+                ", totalAmount=" + totalAmount +
+                ", paymentMethod='" + paymentMethod + '\'' +
+                ", paymentStatus='" + paymentStatus + '\'' +
+                ", transactionId='" + transactionId + '\'' +
+                ", orderItems=" + (orderItems != null ? orderItems.size() : 0) + " items" +
+                '}';
     }
-
+}
+ 
     // DTO for order items within the request
     public static class OrderItemData {
         private Long productId;
@@ -195,20 +280,20 @@ public class OrderController {
         private Integer quantity;
         private Double price;
         private Double totalPrice;
-
+ 
         // Getters and Setters
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-
+ 
         public String getProductName() { return productName; }
         public void setProductName(String productName) { this.productName = productName; }
-
+ 
         public Integer getQuantity() { return quantity; }
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
-
+ 
         public Double getPrice() { return price; }
         public void setPrice(Double price) { this.price = price; }
-
+ 
         public Double getTotalPrice() { return totalPrice; }
         public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
     }

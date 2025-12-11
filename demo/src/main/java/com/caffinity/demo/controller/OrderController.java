@@ -33,10 +33,11 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-Session-Id", required = false) String sessionId, // ADDED X-Session-Id
             @RequestBody CreateOrderRequest request) {
         try {
-            System.out.println("🔄 Received order creation request from frontend for user: " + userId);
-           
+            System.out.println("🔄 Received order creation request from frontend for user: " + userId + " and session: " + sessionId);
+    
             // DEBUG: Log incoming request data
             System.out.println("📦 Request Data Received:");
             System.out.println("📦 Customer Name: " + request.getCustomerName());
@@ -46,7 +47,7 @@ public class OrderController {
             System.out.println("📦 Payment Status: " + request.getPaymentStatus());
             System.out.println("📦 Order Items Count: " +
                 (request.getOrderItems() != null ? request.getOrderItems().size() : 0));
-           
+    
             // Validate required fields
             if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Customer name is required");
@@ -57,7 +58,7 @@ public class OrderController {
             if (request.getTotalAmount() == null || request.getTotalAmount() <= 0) {
                 return ResponseEntity.badRequest().body("Valid total amount is required");
             }
-           
+    
             // Log payment method validation
             if (request.getPaymentMethod() != null) {
                 System.out.println("💳 Raw payment method from frontend: '" + request.getPaymentMethod() + "'");
@@ -72,8 +73,9 @@ public class OrderController {
             } else {
                 System.out.println("⚠️ No payment method received from frontend");
             }
-           
-            Order order = orderService.createOrderFromFrontend(userId, request);
+
+            // UPDATED: Pass sessionId to the service layer
+            Order order = orderService.createOrderFromFrontend(userId, sessionId, request);
             return ResponseEntity.ok(order);
         } catch (Exception e) {
             System.err.println("❌ Error creating order: " + e.getMessage());
@@ -81,7 +83,7 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Error creating order: " + e.getMessage());
         }
     }
- 
+
     // Create new order from cart - UPDATED
     @PostMapping("/create")
     public ResponseEntity<?> createOrderFromCart(

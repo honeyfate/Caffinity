@@ -1,5 +1,6 @@
 package com.caffinity.demo.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -183,5 +184,24 @@ public class CartService {
             cartRepository.save(cart);
         }
         // If user cart exists but no guest cart, do nothing
+    }
+    
+    // NEW METHOD FOR REMOVING SPECIFIC ITEMS AFTER ORDER (BUG FIX)
+    @Transactional
+    public void removeSpecificCartItems(Cart cart, List<CartItem> itemsToRemove) {
+        if (itemsToRemove == null || itemsToRemove.isEmpty()) {
+            return;
+        }
+        
+        // 1. Remove the items from the Cart entity's collection
+        for (CartItem item : itemsToRemove) {
+            cart.getCartItems().remove(item);
+        }
+        
+        // 2. Delete the items from the CartItem table in the database
+        cartItemRepository.deleteAll(itemsToRemove);
+        
+        // 3. Save the updated cart (to update updatedAt timestamp and flush changes)
+        cartRepository.save(cart);
     }
 }

@@ -2,6 +2,9 @@ package com.caffinity.demo.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +15,7 @@ import com.caffinity.demo.entity.CartItem;
 import com.caffinity.demo.entity.Order;
 import com.caffinity.demo.entity.OrderItem;
 import com.caffinity.demo.entity.OrderStatus;
+import com.caffinity.demo.entity.PaymentMethod;
 import com.caffinity.demo.entity.User;
 import com.caffinity.demo.repository.CartRepository;
 import com.caffinity.demo.repository.OrderItemRepository;
@@ -39,8 +43,10 @@ public class OrderService {
 
     // Create order from frontend with customer info and order items
     @Transactional
-    public Order createOrderFromFrontend(Long userId, com.caffinity.demo.controller.OrderController.CreateOrderRequest request) {
-        System.out.println("🔄 Creating order from frontend for user ID: " + userId);
+    public Order createOrderFromFrontend(Long userId, String sessionId, com.caffinity.demo.controller.OrderController.CreateOrderRequest request) {
+        System.out.println("🔄 Creating order from frontend for user ID: " + userId + " and session ID: " + sessionId);
+        System.out.println("💰 Payment Method from request: " + request.getPaymentMethod());
+        System.out.println("💳 Transaction ID from request: " + request.getTransactionId());
         
         try {
             User user = null;
@@ -48,6 +54,9 @@ public class OrderService {
                 user = userRepository.findByUserId(userId)
                         .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
             }
+
+            // Create a map to track ordered product IDs and their total quantities
+            Map<Long, Integer> orderedItemsQuantityMap = new HashMap<>();
             
             // Create new order
             Order order = new Order();
@@ -57,7 +66,47 @@ public class OrderService {
             order.setStatus(OrderStatus.PENDING);
             order.setTotalAmount(request.getTotalAmount());
             
-            // Add order items from frontend
+            // FIX: Convert String to PaymentMethod enum using your specific enum values
+            if (request.getPaymentMethod() != null && !request.getPaymentMethod().isEmpty()) {
+                try {
+                    // Normalize the string to match your enum values
+                    String paymentMethodStr = request.getPaymentMethod().toUpperCase().trim();
+                    
+                    // Handle different input formats
+                    if (paymentMethodStr.equals("CREDIT CARD") || paymentMethodStr.equals("CREDIT_CARD")) {
+                        paymentMethodStr = "CREDIT_CARD";
+                    } else if (paymentMethodStr.equals("DEBIT CARD") || paymentMethodStr.equals("DEBIT_CARD")) {
+                        paymentMethodStr = "DEBIT_CARD";
+                    } else if (paymentMethodStr.equals("BANK TRANSFER") || paymentMethodStr.equals("BANK_TRANSFER")) {
+                        paymentMethodStr = "BANK_TRANSFER";
+                    }
+                    // GCASH and PAYMAYA are already single words
+                    
+                    // Convert to enum
+                    PaymentMethod paymentMethod = PaymentMethod.valueOf(paymentMethodStr);
+                    order.setPaymentMethod(paymentMethod);
+                    System.out.println("✅ Converted payment method to enum: " + paymentMethod);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("⚠️ Invalid payment method: " + request.getPaymentMethod() + 
+                                 ". Using default: GCASH");
+                    // Set default to GCASH (common in PH)
+                    order.setPaymentMethod(PaymentMethod.GCASH);
+                }
+            } else {
+                // Set default payment method if not provided (GCASH for PH)
+                order.setPaymentMethod(PaymentMethod.GCASH);
+                System.out.println("ℹ️ No payment method provided, using default: GCASH");
+            }
+            
+            // Set transaction ID
+            if (request.getTransactionId() != null && !request.getTransactionId().isEmpty()) {
+                order.setTransactionId(request.getTransactionId());
+            } else {
+                // Generate transaction ID if not provided
+                order.setTransactionId(generateTransactionId());
+            }
+            
+            // Add order items from frontend and populate the map
             if (request.getOrderItems() != null && !request.getOrderItems().isEmpty()) {
                 for (com.caffinity.demo.controller.OrderController.OrderItemData itemData : request.getOrderItems()) {
                     OrderItem orderItem = new OrderItem();
@@ -69,19 +118,71 @@ public class OrderService {
                     orderItem.setQuantity(itemData.getQuantity());
                     orderItem.setUnitPrice(itemData.getPrice());
                     order.addOrderItem(orderItem);
+
+                    // Populate map for cart processing
+                    orderedItemsQuantityMap.merge(itemData.getProductId(), itemData.getQuantity(), Integer::sum);
                 }
             }
             
             // Save order
             Order savedOrder = orderRepository.save(order);
             System.out.println("✅ Order created successfully with ID: " + savedOrder.getOrderId());
+            System.out.println("💰 Payment Method saved: " + savedOrder.getPaymentMethod());
+            System.out.println("💳 Transaction ID saved: " + savedOrder.getTransactionId());
             
-            // Clear user's cart after successful order creation (if user exists)
+            // Only remove ordered items from cart
+            Optional<Cart> userCartOpt = Optional.empty();
+
+            // 1. Try to find the cart by User ID (for logged-in users)
             if (user != null) {
-                Optional<Cart> userCart = cartRepository.findByUserWithItems(user);
-                if (userCart.isPresent()) {
-                    cartRepository.delete(userCart.get());
-                    System.out.println("🛒 User cart cleared after order creation");
+                userCartOpt = cartRepository.findByUserWithItems(user);
+            } 
+            
+            // 2. If not found, try to find the cart by Session ID (for guest users)
+            if (!userCartOpt.isPresent() && sessionId != null && !sessionId.isEmpty()) {
+                userCartOpt = cartRepository.findBySessionIdWithItems(sessionId);
+            }
+
+            if (userCartOpt.isPresent()) {
+                Cart userCart = userCartOpt.get();
+                int itemsModifiedCount = 0;
+                
+                // Use Iterator for safe modification/removal while iterating
+                Iterator<CartItem> iterator = userCart.getCartItems().iterator();
+                while (iterator.hasNext()) {
+                    CartItem cartItem = iterator.next();
+                    Long productId = cartItem.getProduct().getProductId();
+                    
+                    if (orderedItemsQuantityMap.containsKey(productId)) {
+                        Integer orderedQuantity = orderedItemsQuantityMap.get(productId);
+                        
+                        if (cartItem.getQuantity() <= orderedQuantity) {
+                            // Remove the item completely from the cart's collection
+                            iterator.remove();
+                            itemsModifiedCount++;
+                            System.out.println("🛒 Removed CartItem for Product ID: " + productId + " as quantity was fully ordered.");
+                        } else {
+                            // Decrement quantity
+                            cartItem.setQuantity(cartItem.getQuantity() - orderedQuantity);
+                            System.out.println("🛒 Decremented CartItem quantity for Product ID: " + productId + " to " + cartItem.getQuantity());
+                            itemsModifiedCount++;
+                        }
+                        
+                        // Remove the entry from the map after processing the corresponding cart item
+                        orderedItemsQuantityMap.remove(productId);
+                    }
+                }
+                
+                if (itemsModifiedCount > 0) {
+                    // The cart contents list was modified (items removed/quantities decremented)
+                    cartRepository.save(userCart); 
+                    System.out.println("🛒 Cart saved after removal/adjustment of items.");
+                }
+                
+                // Check if the cart is now empty and delete the cart entity itself
+                if (userCart.getCartItems().isEmpty()) {
+                    cartRepository.delete(userCart);
+                    System.out.println("🛒 User cart is now empty and has been removed.");
                 }
             }
             
@@ -94,7 +195,7 @@ public class OrderService {
         }
     }
 
-    // Create order from cart - UPDATED
+    // Create order from cart
     @Transactional
     public Order createOrderFromCart(Long userId) {
         System.out.println("🔄 Creating order from cart for user ID: " + userId);
@@ -119,6 +220,10 @@ public class OrderService {
             order.setUser(user);
             order.setStatus(OrderStatus.PENDING);
             
+            // FIX: Use PaymentMethod enum (GCASH as default)
+            order.setPaymentMethod(PaymentMethod.GCASH);
+            order.setTransactionId(generateTransactionId()); // Generate a transaction ID
+            
             // Convert cart items to order items
             for (CartItem cartItem : cart.getCartItems()) {
                 OrderItem orderItem = new OrderItem();
@@ -134,6 +239,8 @@ public class OrderService {
             // Save order
             Order savedOrder = orderRepository.save(order);
             System.out.println("✅ Order created successfully with ID: " + savedOrder.getOrderId());
+            System.out.println("💰 Payment Method: " + savedOrder.getPaymentMethod());
+            System.out.println("💳 Transaction ID: " + savedOrder.getTransactionId());
             
             // Clear cart after successful order creation
             cartRepository.deleteBySessionId(sessionId);
@@ -255,6 +362,13 @@ public class OrderService {
     public List<Order> getRecentOrders() {
         System.out.println("📋 Fetching recent orders");
         return orderRepository.findTop10ByOrderByOrderDateDesc();
+    }
+
+    // Helper method to generate unique transaction ID
+    private String generateTransactionId() {
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String random = String.valueOf((int)(Math.random() * 10000));
+        return "TXN-" + timestamp + "-" + random;
     }
 
     // Helper class for statistics

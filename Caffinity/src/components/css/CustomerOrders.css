@@ -833,7 +833,12 @@
 }
 
 /* ===================================================== */
-/* ORDER DETAILS MODAL STYLES - AT ROOT LEVEL */
+/* ORDER DETAILS MODAL - CORRECTED VERSION */
+/* ===================================================== */
+
+/* Order Details Modal Styles */
+/* ===================================================== */
+/* ORDER DETAILS MODAL - FIXED WORKING SCROLLBAR */
 /* ===================================================== */
 
 /* Order Details Modal Styles */
@@ -856,7 +861,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent !important;
+  pointer-events: auto;
 }
 
 .modal-content {
@@ -870,39 +876,7 @@
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(139, 69, 19, 0.3);
   animation: modalSlideIn 0.3s ease;
-  /* Container doesn't scroll, inner content does */
   overflow: hidden;
-}
-
-.modal-body {
-  padding: 30px;
-  /* This makes the content scrollable */
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  /* Better scrolling experience */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: #d4b596 transparent;
-}
-
-/* Custom scrollbar for modal */
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: #f5efe8;
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: #d4b596;
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: #c4a586;
 }
 
 @keyframes modalSlideIn {
@@ -969,10 +943,79 @@
   transform: rotate(90deg);
 }
 
+/* SINGLE MODAL-BODY DEFINITION - FIXED SCROLLBAR */
 .modal-body {
   padding: 30px;
-  overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* HIDE DEFAULT SCROLLBAR FOR WEBKIT */
+.modal-body::-webkit-scrollbar {
+  width: 12px; /* Make it wider for better interaction */
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f5efe8;
+  border-radius: 6px;
+  margin: 5px;
+  border: 1px solid #e8d8c6;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  border-radius: 6px;
+  border: 3px solid #f5efe8;
+  min-height: 40px;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #a0522d, #c4a586);
+  box-shadow: 0 0 8px rgba(139, 69, 19, 0.4);
+}
+
+.modal-body::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, #7a3c0f, #8b4513);
+}
+
+.modal-body::-webkit-scrollbar-button {
+  display: block;
+  height: 10px;
+  background: #f5efe8;
+  border: 1px solid #e8d8c6;
+}
+
+.modal-body::-webkit-scrollbar-button:hover {
+  background: #e8d8c6;
+}
+
+.modal-body::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ENABLE SCROLLING FOR THE MODAL BODY */
+.modal-body {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Ensure modal body is scrollable */
+.modal-body {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* Additional fix for Firefox */
+@supports (scrollbar-width: thin) {
+  .modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: #a0522d #f5efe8;
+  }
 }
 
 .modal-section {

@@ -1,7 +1,8 @@
 /* Customer Profile Styles */
 .customer-profile-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #3f1e00;
+; /* solid brown */
     padding: 20px;
 }
 
@@ -113,7 +114,8 @@
     margin: 0 auto 20px;
     border-radius: 50%;
     overflow: hidden;
-    border: 5px solid #8B4513;
+    border: 5px solid white;
+
     box-shadow: 0 10px 30px rgba(139, 69, 19, 0.3);
 }
 

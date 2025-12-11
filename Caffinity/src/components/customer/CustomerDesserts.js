@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaCartPlus, FaCheck, FaShoppingCart } from 'react-icons/fa';
+import { FaCartPlus, FaCheck, FaSearch, FaTimes, FaChevronDown } from 'react-icons/fa';
 import '../css/CustomerDesserts.css';
 
 const CustomerDesserts = () => {
   const [dessertProducts, setDessertProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [uniqueCategories, setUniqueCategories] = useState(['All Categories']);
 
   // Generate or get session ID
   const getSessionId = () => {
@@ -19,7 +24,7 @@ const CustomerDesserts = () => {
     return sessionId;
   };
 
-  // Get current user (updated to use consistent key)
+  // Get current user
   const getCurrentUser = () => {
     const userData = localStorage.getItem('currentUser');
     return userData ? JSON.parse(userData) : null;
@@ -51,7 +56,6 @@ const CustomerDesserts = () => {
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
-        // Fallback to localStorage if needed
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
           setCartItems(JSON.parse(savedCart));
@@ -59,7 +63,6 @@ const CustomerDesserts = () => {
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // Fallback to localStorage
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
@@ -72,11 +75,6 @@ const CustomerDesserts = () => {
     fetchCart();
   }, []);
 
-  // Save cart to localStorage whenever it changes (fallback)
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }, [cartItems]);
-
   // Fetch dessert products from backend
   const fetchDessertProducts = async () => {
     try {
@@ -84,17 +82,27 @@ const CustomerDesserts = () => {
       const response = await axios.get('http://localhost:8080/api/products/desserts');
       console.log('Dessert products fetched:', response.data);
       
-      // Debug each product
-      response.data.forEach((product, index) => {
-        console.log(`Product ${index}:`, product);
-        console.log(`Product ${index} ID:`, product.id, 'Type:', typeof product.id);
-      });
+      // Debug category data
+      if (response.data.length > 0) {
+        console.log('All dessert categories found:', response.data.map(p => p.category));
+      }
       
       const productsWithImages = response.data.map(product => ({
         ...product,
         imageUrl: product.imageUrl || getPlaceholderImage(product.name)
       }));
       setDessertProducts(productsWithImages);
+      setFilteredProducts(productsWithImages); // Initialize filtered products
+      
+      // Extract unique categories from products
+      const categories = ['All Categories'];
+      response.data.forEach(product => {
+        if (product.category && !categories.includes(product.category)) {
+          categories.push(product.category);
+        }
+      });
+      setUniqueCategories(categories);
+      console.log('Available categories:', categories);
     } catch (error) {
       console.error('Error fetching dessert products:', error);
     }
@@ -108,6 +116,57 @@ const CustomerDesserts = () => {
   useEffect(() => {
     fetchDessertProducts();
   }, []);
+
+  // Handle search functionality
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    applyFilters(selectedCategory, query);
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSelectedCategory('All Categories');
+    setFilteredProducts(dessertProducts);
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryDropdown(false);
+    applyFilters(category, searchQuery);
+  };
+
+  // Apply filters based on category and search
+  const applyFilters = (category, searchQuery) => {
+    let filtered = dessertProducts;
+    
+    console.log('Applying filters:', { category, searchQuery });
+    
+    // First apply category filter if not 'All Categories'
+    if (category !== 'All Categories') {
+      filtered = filtered.filter(product => {
+        const productCategory = product.category ? product.category.toLowerCase() : '';
+        const selectedCategoryLower = category.toLowerCase();
+        
+        // More flexible matching: check if category contains the selected category or vice versa
+        return productCategory.includes(selectedCategoryLower) || 
+               selectedCategoryLower.includes(productCategory);
+      });
+      console.log('After category filter:', filtered.length);
+    }
+    
+    // Then apply search filter if there's a query
+    if (searchQuery && searchQuery.trim() !== '') {
+      filtered = filtered.filter(product => 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      console.log('After search filter:', filtered.length);
+    }
+    
+    setFilteredProducts(filtered);
+  };
 
   // Toggle cart item - add if not present, remove if present
   const toggleCartItem = async (product) => {
@@ -177,7 +236,7 @@ const CustomerDesserts = () => {
       let cartItems = JSON.parse(savedCart);
       const existingItemIndex = cartItems.findIndex(item => {
         const itemProductId = item.product?.productId || item.productId || item.id;
-        return itemProductId === (product.productId || product.id);
+        return itemProductId === product.productId || itemProductId === product.id;
       });
       
       if (existingItemIndex > -1) {
@@ -228,14 +287,11 @@ const CustomerDesserts = () => {
   // Get image source for product
   const getProductImage = (product) => {
     if (product.imageUrl) {
-      // If it's already a full URL, use it directly
       if (product.imageUrl.startsWith('http')) {
         return product.imageUrl;
       }
-      // If it's a relative path, make it absolute
       return `http://localhost:8080${product.imageUrl}`;
     }
-    // Fallback to placeholder if no image URL
     return getPlaceholderImage(product.name);
   };
 
@@ -257,20 +313,87 @@ const CustomerDesserts = () => {
       {/* Header */}
       <div className="desserts-section-header">
         <div className="header-content">
-          <h1>Our Sweet Delights</h1>
-          <p className="section-subtitle">Indulge in our delicious dessert selection</p>
+          <h1 className="section-title">Our Sweet Delights</h1>
+          
+          {/* Filter and Search Container */}
+          <div className="filters-search-container">
+            {/* Category Filter Dropdown */}
+            <div 
+              className="category-filter-container"
+              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+            >
+              <div className="category-filter-selected">
+                <span className="filter-label">Category:</span>
+                <span className="filter-value">{selectedCategory}</span>
+                <FaChevronDown className={`dropdown-arrow ${showCategoryDropdown ? 'rotated' : ''}`} />
+              </div>
+              
+              {showCategoryDropdown && (
+                <div className="category-dropdown">
+                  {uniqueCategories.map((category) => (
+                    <div
+                      key={category}
+                      className={`dropdown-item ${selectedCategory === category ? 'selected' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCategorySelect(category);
+                      }}
+                    >
+                      {category}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search Bar */}
+            <div className="search-minimal-container">
+              <div className="search-minimal-wrapper">
+                <FaSearch className="search-minimal-icon" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  placeholder="Search by dessert name..."
+                  className="search-minimal-input"
+                  aria-label="Search dessert products by name"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={clearSearch} 
+                    className="search-minimal-clear"
+                    aria-label="Clear search"
+                  >
+                    <FaTimes className="clear-minimal-icon" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Products Grid */}
       <div className="products-grid">
-        {dessertProducts.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <div className="no-products">
-            <p>No dessert products available at the moment. Please check back later!</p>
+            {searchQuery || selectedCategory !== 'All Categories' ? (
+              <>
+                <p className="no-results-message">
+                  No dessert found for "{searchQuery}" {selectedCategory !== 'All Categories' && `in ${selectedCategory}`}
+                </p>
+                <p className="suggestion">Try a different search term or category</p>
+                <button onClick={clearSearch} className="clear-search-btn-minimal">
+                  Clear Filters & Show All
+                </button>
+              </>
+            ) : (
+              <p>No dessert products available at the moment. Please check back later!</p>
+            )}
           </div>
         ) : (
-          dessertProducts.map(product => (
-            <div key={product.productId || product.id} className="product-card">
+          filteredProducts.map(product => (
+            <div key={product.id} className="product-card">
               <div className="product-image">
                 <img 
                   src={getProductImage(product)} 
@@ -285,7 +408,7 @@ const CustomerDesserts = () => {
               </div>
               
               <div className="product-info">
-                <h3>{product.name}</h3>
+                <h3 className="product-name">{product.name}</h3>
                 <p className="product-description">{product.description}</p>
                 <div className="product-price">₱{parseFloat(product.price).toFixed(2)}</div>
                 

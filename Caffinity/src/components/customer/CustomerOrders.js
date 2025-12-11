@@ -623,7 +623,7 @@ const CustomerOrders = () => {
                     </div>
                     <div className="detail-column">
                       <div className="detail-item">
-                        <span className="detail-label">Delivery Time</span>
+                        <span className="detail-label">Pickup</span>
                         <span className="detail-value">
                           <FaClock /> {order.deliveryTime}
                         </span>
@@ -705,6 +705,8 @@ const CustomerOrders = () => {
 
             {/* Modal Body */}
             <div className="modal-body">
+              <div className="modal-scroll-container">
+                
               {/* Order Summary */}
               <div className="modal-section">
                 <div className="modal-summary">
@@ -713,6 +715,7 @@ const CustomerOrders = () => {
                     <span className="summary-value">
                       <FaCalendarAlt /> {formatDetailedDate(selectedOrder.date)}
                     </span>
+                  </div>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Status</span>

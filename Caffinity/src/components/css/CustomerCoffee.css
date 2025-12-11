@@ -857,3 +857,7 @@ html, body {
     padding: 10px 15px;
   }
 }
+.coffee-section-header .section-title {
+  margin-top: 50px !important;
+  margin-bottom: -10px !important;
+}

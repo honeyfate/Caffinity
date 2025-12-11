@@ -686,3 +686,8 @@
     font-size: 0.85rem;
   }
 }
+.desserts-section-header .section-title {
+  margin-top: 50px !important;
+  margin-bottom: -10px !important;
+}
+ 

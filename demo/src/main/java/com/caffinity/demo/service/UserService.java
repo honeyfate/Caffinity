@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.caffinity.demo.entity.User;
@@ -17,6 +18,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PostConstruct
     public void initDefaultAdmin() {
@@ -25,7 +29,7 @@ public class UserService {
         if (!userRepository.existsByUsername(adminUsername)) {
             User adminUser = new User(
                 adminUsername,
-                "admin123", // Default password - in production, this should be encrypted
+                passwordEncoder.encode("admin123"), // HASHED password
                 "System",
                 "Administrator",
                 adminUsername,
@@ -33,7 +37,25 @@ public class UserService {
                 UserRole.ADMIN
             );
             userRepository.save(adminUser);
-            System.out.println("Default admin account created: " + adminUsername);
+            System.out.println("Default admin account created with HASHED password: " + adminUsername);
+        }
+        
+        // Optional: Hash existing plain text passwords on startup
+        hashExistingPasswords();
+    }
+    
+    private void hashExistingPasswords() {
+        List<User> allUsers = userRepository.findAll();
+        for (User user : allUsers) {
+            // Check if password is already hashed (BCrypt hashes start with $2a$)
+            String password = user.getPassword();
+            if (password != null && !password.startsWith("$2a$") && !password.startsWith("$2b$")) {
+                // Password is not hashed, hash it
+                String hashedPassword = passwordEncoder.encode(password);
+                user.setPassword(hashedPassword);
+                userRepository.save(user);
+                System.out.println("Hashed password for user: " + user.getUsername());
+            }
         }
     }
 
@@ -65,6 +87,10 @@ public class UserService {
             user.setRole(UserRole.CUSTOMER);
         }
 
+        // Hash the password before saving
+        String hashedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(hashedPassword);
+
         return userRepository.save(user);
     }
 
@@ -78,6 +104,8 @@ public class UserService {
         user.setPhoneNumber(userDetails.getPhoneNumber());
         user.setLoginStatus(userDetails.getLoginStatus());
         user.setRole(userDetails.getRole());
+
+        // Note: Password should not be updated here - use changeUserPassword method instead
 
         return userRepository.save(user);
     }
@@ -102,9 +130,9 @@ public class UserService {
         
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            // For now, comparing plain text passwords
-            // In production, you should use password encoding
-            if (user.getPassword().equals(password)) {
+            
+            // Use passwordEncoder to verify password
+            if (passwordEncoder.matches(password, user.getPassword())) {
                 // Update login status
                 user.setLoginStatus("ONLINE");
                 userRepository.save(user);
@@ -186,11 +214,15 @@ public class UserService {
         Optional<User> userOpt = userRepository.findByUserId(id);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            // Verify current password
-            if (!user.getPassword().equals(currentPassword)) {
+            
+            // Verify current password using encoder
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
                 throw new RuntimeException("Current password is incorrect");
             }
-            user.setPassword(newPassword);
+            
+            // Hash and set new password
+            String hashedNewPassword = passwordEncoder.encode(newPassword);
+            user.setPassword(hashedNewPassword);
             return userRepository.save(user);
         }
         throw new RuntimeException("User not found");
@@ -235,5 +267,15 @@ public class UserService {
         // }
         
         return customer;
+    }
+    
+    // Helper method to test password hashing
+    public String testHashPassword(String plainPassword) {
+        return passwordEncoder.encode(plainPassword);
+    }
+    
+    // Helper method to check if password matches
+    public boolean testPasswordMatch(String plainPassword, String hashedPassword) {
+        return passwordEncoder.matches(plainPassword, hashedPassword);
     }
 }

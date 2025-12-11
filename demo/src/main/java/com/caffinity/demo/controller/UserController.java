@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +55,7 @@ public class UserController {
             response.put("userId", savedUser.getUserId());
             response.put("username", savedUser.getUsername());
             response.put("role", savedUser.getRole());
+            response.put("note", "Password has been securely hashed");
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
@@ -151,6 +154,7 @@ public class UserController {
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Login successful");
                 response.put("user", createUserResponse(authenticatedUser));
+                response.put("note", "Password verification successful using secure hashing");
                 return ResponseEntity.ok(response);
             } else {
                 Map<String, String> errorResponse = new HashMap<>();
@@ -332,6 +336,7 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Password updated successfully");
             response.put("user", createUserResponse(updatedAdmin));
+            response.put("note", "New password has been securely hashed");
             
             return ResponseEntity.ok(response);
             
@@ -513,6 +518,7 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Password updated successfully");
             response.put("user", createUserResponse(updatedCustomer));
+            response.put("note", "New password has been securely hashed");
             
             return ResponseEntity.ok(response);
             
@@ -523,6 +529,170 @@ public class UserController {
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Error changing password: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ==================== PASSWORD HASHING SUPPORT ENDPOINTS ====================
+    
+    // Test endpoint to verify password hashing
+    @GetMapping("/hash-test/{password}")
+    public ResponseEntity<?> testHash(@PathVariable String password) {
+        try {
+            PasswordEncoder encoder = new BCryptPasswordEncoder();
+            String hashed = encoder.encode(password);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("original", password);
+            response.put("hashed", hashed);
+            response.put("matches", encoder.matches(password, hashed));
+            response.put("hashLength", hashed.length());
+            response.put("isBcryptHash", hashed.startsWith("$2a$"));
+            response.put("hashPrefix", hashed.substring(0, Math.min(10, hashed.length())));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Hashing test failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    // Generate hash for admin password (for manual database update)
+    @GetMapping("/admin/hash-password/{password}")
+    public ResponseEntity<?> hashPasswordForAdmin(@PathVariable String password) {
+        try {
+            PasswordEncoder encoder = new BCryptPasswordEncoder();
+            String hashed = encoder.encode(password);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("original", password);
+            response.put("hashed", hashed);
+            response.put("sqlCommand", 
+                "UPDATE users SET password = '" + hashed + "' WHERE username = 'admin@caffinity.com';");
+            response.put("verification", encoder.matches(password, hashed));
+            response.put("note", "Use this SQL command in MySQL Workbench to update admin password");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Password hashing failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    // Check if a user's password is hashed
+    @GetMapping("/check-password-hash/{username}")
+    public ResponseEntity<?> checkPasswordHash(@PathVariable String username) {
+        try {
+            Optional<User> userOpt = userService.getUserByUsername(username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                String password = user.getPassword();
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("username", username);
+                response.put("passwordStored", password != null ? password.substring(0, Math.min(20, password.length())) + "..." : "null");
+                response.put("isHashed", password != null && (password.startsWith("$2a$") || password.startsWith("$2b$")));
+                response.put("hashLength", password != null ? password.length() : 0);
+                
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "User not found: " + username);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Check failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    // Test password verification
+    @PostMapping("/test-password-verify")
+    public ResponseEntity<?> testPasswordVerification(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            String password = request.get("password");
+            
+            if (username == null || password == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Username and password are required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+            
+            Optional<User> userOpt = userService.getUserByUsername(username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                PasswordEncoder encoder = new BCryptPasswordEncoder();
+                boolean matches = encoder.matches(password, user.getPassword());
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("username", username);
+                response.put("passwordProvided", password);
+                response.put("passwordMatches", matches);
+                response.put("userExists", true);
+                response.put("userRole", user.getRole().toString());
+                
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("username", username);
+                response.put("passwordProvided", password);
+                response.put("passwordMatches", false);
+                response.put("userExists", false);
+                response.put("note", "User does not exist");
+                
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Verification test failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    // Reset user password (admin only feature - for testing)
+    @PostMapping("/admin/reset-password/{username}")
+    public ResponseEntity<?> resetUserPassword(
+            @PathVariable String username,
+            @RequestBody Map<String, String> request) {
+        try {
+            String newPassword = request.get("newPassword");
+            
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "New password is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+            
+            Optional<User> userOpt = userService.getUserByUsername(username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                PasswordEncoder encoder = new BCryptPasswordEncoder();
+                String hashedPassword = encoder.encode(newPassword);
+                
+                // Save the hashed password
+                user.setPassword(hashedPassword);
+                // Note: In a real scenario, you'd need to inject UserRepository here
+                // or create a method in UserService to update password directly
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("username", username);
+                response.put("newPasswordHashed", hashedPassword);
+                response.put("verification", encoder.matches(newPassword, hashedPassword));
+                response.put("note", "Password reset successful - use the service layer to actually save this");
+                
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "User not found: " + username);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Password reset failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

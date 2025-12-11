@@ -13,35 +13,46 @@ import {
   FaMoneyBill,
   FaMobileAlt,
   FaExclamationCircle,
-  FaRedo
+  FaRedo,
+  FaChevronRight,
+  FaMapMarkerAlt,
+  FaInfoCircle,
+  FaTimes,
+  FaTag,
+  FaTruck,
+  FaPhone,
+  FaEnvelope,
+  FaPrint,
+  FaWhatsapp,
+  FaStar,
+  FaUser
 } from 'react-icons/fa';
 import axios from 'axios';
 
 const CustomerOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
+  const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const navigate = useNavigate();
 
   // Get current user ID from localStorage or auth context
   const getCurrentUserId = () => {
-    // Try to get from localStorage
     const userId = localStorage.getItem('userId');
     if (userId) {
       return parseInt(userId, 10);
     }
     
-    // Try to get from sessionStorage
     const sessionUserId = sessionStorage.getItem('userId');
     if (sessionUserId) {
       return parseInt(sessionUserId, 10);
     }
     
-    // For testing - remove this in production
     console.warn('⚠️ No user ID found, using default ID 2 for testing');
-    return 2; // Default test user
+    return 2;
   };
 
   // Get user token for authorization
@@ -63,6 +74,29 @@ const CustomerOrders = () => {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date Error';
+    }
+  };
+
+  // Format date with more details
+  const formatDetailedDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       });
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -171,12 +205,13 @@ const CustomerOrders = () => {
             date: order.orderDate,
             items: order.orderItems ? order.orderItems.map(item => ({
               id: item.orderItemId,
-              name: item.product?.productName || 'Unknown Product',
+              name: item.product?.name || 'Unknown Product',
               description: item.product?.description || '',
               quantity: item.quantity || 1,
               price: item.unitPrice || 0,
               totalPrice: item.totalPrice || 0,
-              image: item.product?.imageUrl
+              image: item.product?.imageUrl,
+              category: item.product?.category || 'General'
             })) : [],
             itemCount: itemCount,
             total: order.totalAmount || 0,
@@ -186,10 +221,14 @@ const CustomerOrders = () => {
             paymentStatus: order.paymentStatus,
             paymentAmount: order.paymentAmount || order.totalAmount || 0,
             transactionId: order.transactionId || 'N/A',
-            deliveryTime: '30-45 mins', // This should come from backend
+            deliveryTime: '30-45 mins',
             deliveryAddress: order.deliveryAddress || 'Not specified',
+            contactNumber: order.contactNumber || 'Not provided',
             notes: order.notes || '',
-            updatedAt: order.updatedAt
+            updatedAt: order.updatedAt,
+            deliveryFee: order.deliveryFee || 50,
+            tax: order.tax || 0,
+            subtotal: order.subtotal || 0
           };
         });
         
@@ -218,9 +257,6 @@ const CustomerOrders = () => {
         // Request setup error
         setError(`Error: ${error.message}`);
       }
-      
-      // Don't use mock data in production - just show error
-      // setOrders(getMockOrders()); // Uncomment for testing
       
     } finally {
       setLoading(false);
@@ -292,9 +328,6 @@ const CustomerOrders = () => {
     try {
       console.log(`🔄 Reordering order ${order.id}`);
       
-      // Navigate to menu with pre-selected items
-      // You might want to save the order items to context or localStorage
-      // and redirect to the cart page
       navigate('/customer/menu', { 
         state: { reorderItems: order.items }
       });
@@ -306,14 +339,23 @@ const CustomerOrders = () => {
   }, [navigate]);
 
   const handleViewDetails = (order) => {
-    // Navigate to order details page or show modal
-    navigate(`/customer/orders/${order.orderId}`, { 
-      state: { order }
-    });
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
   };
 
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) {
+  const handleCloseDetails = () => {
+    setShowDetailsModal(false);
+    setSelectedOrder(null);
+  };
+
+  const handleCancelOrder = async (order) => {
+    // Only allow cancellation for PENDING orders
+    if (order.backendStatus !== 'PENDING' || order.status !== 'pending') {
+      alert('This order can no longer be cancelled as it has already been confirmed.');
+      return;
+    }
+    
+    if (!window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
       return;
     }
     
@@ -322,7 +364,7 @@ const CustomerOrders = () => {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
       const response = await axios.put(
-        `http://localhost:8080/api/orders/${orderId}/cancel`,
+        `http://localhost:8080/api/orders/${order.orderId}/cancel`,
         {},
         { headers }
       );
@@ -330,12 +372,16 @@ const CustomerOrders = () => {
       console.log('✅ Order cancelled:', response.data);
       alert('Order cancelled successfully!');
       
-      // Refresh orders
       fetchOrders();
       
     } catch (error) {
       console.error('❌ Error cancelling order:', error);
-      alert(`Failed to cancel order: ${error.response?.data || error.message}`);
+      
+      if (error.response?.status === 400) {
+        alert('This order cannot be cancelled as it is already confirmed or being processed.');
+      } else {
+        alert(`Failed to cancel order: ${error.response?.data?.message || error.message}`);
+      }
     }
   };
 
@@ -362,25 +408,78 @@ const CustomerOrders = () => {
       <main className="orders-content">
         <div className="orders-header">
           <div className="header-top">
-            <h1><FaShoppingBag /> My Orders</h1>
-            <button 
-              className="refresh-btn"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <FaRedo className={refreshing ? 'spinning' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
+            <div className="header-title">
+              <h1><FaShoppingBag /> My Orders</h1>
+              <p className="orders-subtitle">Track and manage your orders</p>
+            </div>
+            <div className="header-actions">
+              <button 
+                className="refresh-btn"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <FaRedo className={refreshing ? 'spinning' : ''} />
+                {refreshing ? 'Refreshing...' : 'Refresh Orders'}
+              </button>
+            </div>
           </div>
-          <p>View and manage your past and current orders</p>
           
           {error && (
             <div className="error-alert">
               <FaExclamationCircle />
-              <span>{error}</span>
+              <div className="error-message">
+                <strong>Error loading orders:</strong>
+                <span>{error}</span>
+              </div>
               <button onClick={fetchOrders}>Try Again</button>
             </div>
           )}
+        </div>
+
+        {/* Stats Summary */}
+        <div className="orders-stats">
+          <div className="stat-card">
+            <div className="stat-icon pending">
+              <FaClock />
+            </div>
+            <div className="stat-info">
+              <span className="stat-count">
+                {orders.filter(o => o.status === 'pending').length}
+              </span>
+              <span className="stat-label">Pending</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon processing">
+              <FaCheckCircle />
+            </div>
+            <div className="stat-info">
+              <span className="stat-count">
+                {orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length}
+              </span>
+              <span className="stat-label">In Progress</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon completed">
+              <FaCheckCircle />
+            </div>
+            <div className="stat-info">
+              <span className="stat-count">
+                {orders.filter(o => o.status === 'completed').length}
+              </span>
+              <span className="stat-label">Completed</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon total">
+              <FaReceipt />
+            </div>
+            <div className="stat-info">
+              <span className="stat-count">{orders.length}</span>
+              <span className="stat-label">Total Orders</span>
+            </div>
+          </div>
         </div>
 
         <div className="orders-filter">
@@ -388,31 +487,36 @@ const CustomerOrders = () => {
             className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
           >
-            All Orders ({orders.length})
+            All Orders
+            <span className="filter-count">({orders.length})</span>
           </button>
           <button 
             className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
             onClick={() => setFilter('pending')}
           >
-            Pending ({orders.filter(o => o.status === 'pending').length})
+            Pending
+            <span className="filter-count">({orders.filter(o => o.status === 'pending').length})</span>
           </button>
           <button 
             className={`filter-btn ${filter === 'confirmed' ? 'active' : ''}`}
             onClick={() => setFilter('confirmed')}
           >
-            Confirmed ({orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length})
+            In Progress
+            <span className="filter-count">({orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length})</span>
           </button>
           <button 
             className={`filter-btn ${filter === 'completed' ? 'active' : ''}`}
             onClick={() => setFilter('completed')}
           >
-            Completed ({orders.filter(o => o.status === 'completed').length})
+            Completed
+            <span className="filter-count">({orders.filter(o => o.status === 'completed').length})</span>
           </button>
           <button 
             className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`}
             onClick={() => setFilter('cancelled')}
           >
-            Cancelled ({orders.filter(o => o.status === 'cancelled').length})
+            Cancelled
+            <span className="filter-count">({orders.filter(o => o.status === 'cancelled').length})</span>
           </button>
         </div>
 
@@ -425,118 +529,145 @@ const CustomerOrders = () => {
 
         {filteredOrders.length === 0 ? (
           <div className="no-orders">
-            <FaReceipt className="no-orders-icon" />
-            <h3>No orders found</h3>
-            <p>
-              {filter === 'all' 
-                ? "You haven't placed any orders yet." 
-                : `You don't have any ${filter} orders.`}
-            </p>
-            <button 
-              className="browse-btn"
-              onClick={() => navigate('/customer/menu')}
-            >
-              Browse Menu
-            </button>
+            <div className="no-orders-content">
+              <FaReceipt className="no-orders-icon" />
+              <h3>No {filter !== 'all' ? filter : ''} orders found</h3>
+              <p>
+                {filter === 'all' 
+                  ? "You haven't placed any orders yet. Start exploring our menu!" 
+                  : `You don't have any ${filter} orders at the moment.`}
+              </p>
+              <button 
+                className="browse-btn"
+                onClick={() => navigate('/customer/menu')}
+              >
+                <FaShoppingBag /> Browse Menu
+              </button>
+            </div>
           </div>
         ) : (
           <div className="orders-list">
             {filteredOrders.map((order) => (
               <div key={order.orderId || order.id} className="order-card">
-                <div className="order-header">
-                  <div className="order-info">
-                    <h3>Order #{order.id}</h3>
-                    <p className="order-date">
-                      <FaCalendarAlt /> {formatBackendDate(order.date)}
-                    </p>
-                    <p className="order-items-count">
-                      {order.itemCount} item{order.itemCount !== 1 ? 's' : ''}
-                    </p>
+                <div className="order-card-header">
+                  <div className="order-meta">
+                    <div className="order-number">
+                      <h3>Order #{order.id}</h3>
+                      <span className="order-date">
+                        <FaCalendarAlt /> {formatBackendDate(order.date)}
+                      </span>
+                    </div>
+                    <div className="order-quick-info">
+                      <span className="order-items-count">
+                        <FaShoppingBag /> {order.itemCount} item{order.itemCount !== 1 ? 's' : ''}
+                      </span>
+                      <span className="order-total">
+                        {formatCurrency(order.total)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="order-status">
+                  <div className="order-status-section">
                     <span className={getStatusClass(order.status)}>
                       {getStatusIcon(order.status)}
                       {getStatusDisplay(order.status)}
                     </span>
+                    {order.deliveryAddress && order.deliveryAddress !== 'Not specified' && (
+                      <span className="delivery-address">
+                        <FaMapMarkerAlt /> {order.deliveryAddress.substring(0, 30)}...
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="order-items">
-                  <h4>Items Ordered:</h4>
-                  <ul>
-                    {order.items.slice(0, 3).map((item, index) => (
-                      <li key={item.id || index}>
-                        <span className="item-name">{item.name}</span>
-                        <span className="item-quantity">x{item.quantity}</span>
-                        <span className="item-price">{formatCurrency(item.price * item.quantity)}</span>
-                      </li>
-                    ))}
-                    {order.items.length > 3 && (
-                      <li className="more-items">
-                        + {order.items.length - 3} more item{order.items.length - 3 !== 1 ? 's' : ''}
-                      </li>
-                    )}
-                    {order.items.length === 0 && (
-                      <li className="no-items">No items details available</li>
-                    )}
-                  </ul>
-                </div>
-
-                <div className="order-details">
-                  <div className="detail-row">
-                    <span className="detail-label">Total Amount:</span>
-                    <span className="detail-value total">{formatCurrency(order.total)}</span>
-                  </div>
-                  
-                  <div className="detail-row">
-                    <span className="detail-label">Payment Method:</span>
-                    <span className="detail-value payment-method">
-                      {getPaymentMethodIcon(order.paymentMethod)}
-                      {getPaymentMethodDisplay(order.paymentMethod)}
-                      {order.transactionId && order.transactionId !== 'N/A' && (
-                        <span className="transaction-id">(ID: {order.transactionId})</span>
+                <div className="order-card-body">
+                  <div className="order-items-summary">
+                    <h4><FaShoppingBag /> Items</h4>
+                    <div className="items-list">
+                      {order.items.slice(0, 2).map((item, index) => (
+                        <div key={item.id || index} className="item-summary">
+                          <span className="item-name">{item.name}</span>
+                          <span className="item-details">
+                            <span className="item-quantity">x{item.quantity}</span>
+                            <span className="item-price">{formatCurrency(item.price * item.quantity)}</span>
+                          </span>
+                        </div>
+                      ))}
+                      {order.items.length > 2 && (
+                        <div className="more-items-indicator">
+                          + {order.items.length - 2} more item{order.items.length - 2 !== 1 ? 's' : ''}
+                        </div>
                       )}
-                    </span>
+                      {order.items.length === 0 && (
+                        <div className="more-items-indicator">
+                          No items available
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="detail-row">
-                    <span className="detail-label">Payment Status:</span>
-                    <span className={`detail-value payment-status ${order.paymentStatus?.toLowerCase()}`}>
-                      {order.paymentStatus || 'Not Specified'}
-                    </span>
-                  </div>
-                  
-                  <div className="detail-row">
-                    <span className="detail-label">Delivery Time:</span>
-                    <span className="detail-value">{order.deliveryTime}</span>
+
+                  <div className="order-details-grid">
+                    <div className="detail-column">
+                      <div className="detail-item">
+                        <span className="detail-label">Payment Method</span>
+                        <span className="detail-value">
+                          {getPaymentMethodIcon(order.paymentMethod)}
+                          {getPaymentMethodDisplay(order.paymentMethod)}
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Payment Status</span>
+                        <span className={`detail-value payment-status ${order.paymentStatus?.toLowerCase() || 'pending'}`}>
+                          {order.paymentStatus || 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="detail-column">
+                      <div className="detail-item">
+                        <span className="detail-label">Delivery Time</span>
+                        <span className="detail-value">
+                          <FaClock /> {order.deliveryTime}
+                        </span>
+                      </div>
+                      {order.transactionId && order.transactionId !== 'N/A' && (
+                        <div className="detail-item">
+                          <span className="detail-label">Transaction ID</span>
+                          <span className="detail-value transaction">
+                            {order.transactionId}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="order-actions">
-                  {order.status === 'completed' && (
+                <div className="order-card-footer">
+                  <div className="footer-actions">
+                    {order.status === 'completed' && (
+                      <button 
+                        className="action-btn reorder-btn"
+                        onClick={() => handleReorder(order)}
+                      >
+                        <FaRedo /> Reorder
+                      </button>
+                    )}
+                    
+                    {/* Cancel button ONLY shows for PENDING orders */}
+                    {order.status === 'pending' && order.backendStatus === 'PENDING' && (
+                      <button 
+                        className="action-btn cancel-btn"
+                        onClick={() => handleCancelOrder(order)}
+                      >
+                        <FaTimesCircle /> Cancel Order
+                      </button>
+                    )}
+                    
                     <button 
-                      className="reorder-btn"
-                      onClick={() => handleReorder(order)}
+                      className="action-btn details-btn"
+                      onClick={() => handleViewDetails(order)}
                     >
-                      Reorder
+                      <FaInfoCircle /> View Details <FaChevronRight />
                     </button>
-                  )}
-                  
-                  {(order.status === 'pending' || order.status === 'confirmed') && (
-                    <button 
-                      className="cancel-btn"
-                      onClick={() => handleCancelOrder(order.orderId)}
-                    >
-                      Cancel Order
-                    </button>
-                  )}
-                  
-                  <button 
-                    className="view-details-btn"
-                    onClick={() => handleViewDetails(order)}
-                  >
-                    View Details
-                  </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -544,14 +675,241 @@ const CustomerOrders = () => {
         )}
 
         <div className="orders-footer">
-          <p className="orders-help">
-            Need help with an order? <a href="/customer/support">Contact Support</a>
-          </p>
-          <p className="orders-note">
-            Orders are updated in real-time. Pull down to refresh or click the refresh button.
-          </p>
+          <div className="footer-content">
+            <p className="orders-help">
+              <FaInfoCircle /> Need help with an order? 
+              <a href="/customer/support"> Contact our support team</a>
+            </p>
+            <p className="orders-note">
+              Orders are updated in real-time. Refresh to see the latest status.
+            </p>
+          </div>
         </div>
       </main>
+
+      {/* Order Details Modal */}
+      {showDetailsModal && selectedOrder && (
+        <div className="order-details-modal">
+          <div className="modal-overlay" onClick={handleCloseDetails}></div>
+          <div className="modal-content">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <div className="modal-title">
+                <h2><FaReceipt /> Order Details</h2>
+                <span className="modal-order-id">#{selectedOrder.id}</span>
+              </div>
+              <button className="modal-close-btn" onClick={handleCloseDetails}>
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="modal-body">
+              {/* Order Summary */}
+              <div className="modal-section">
+                <div className="modal-summary">
+                  <div className="summary-item">
+                    <span className="summary-label">Order Date</span>
+                    <span className="summary-value">
+                      <FaCalendarAlt /> {formatDetailedDate(selectedOrder.date)}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Status</span>
+                    <span className={`summary-value ${getStatusClass(selectedOrder.status)}`}>
+                      {getStatusIcon(selectedOrder.status)}
+                      {getStatusDisplay(selectedOrder.status)}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Total Amount</span>
+                    <span className="summary-value total-amount">
+                      {formatCurrency(selectedOrder.total)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Items with Images */}
+              <div className="modal-section">
+                <h3><FaShoppingBag /> Order Items ({selectedOrder.itemCount})</h3>
+                <div className="modal-items-list">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={item.id || index} className="modal-item">
+                      <div className="item-image-container">
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="item-image"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://via.placeholder.com/150x150?text=${encodeURIComponent(item.name.substring(0, 2))}`;
+                            }}
+                          />
+                        ) : (
+                          <div className="item-image-placeholder">
+                            <FaTag />
+                            <span>{item.name.charAt(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="item-details">
+                        <h4 className="item-name">{item.name}</h4>
+                        <p className="item-description">{item.description || 'No description available'}</p>
+                        <div className="item-meta">
+                          <span className="item-quantity">Quantity: {item.quantity}</span>
+                          <span className="item-category">{item.category}</span>
+                        </div>
+                        <div className="item-pricing">
+                          <span className="item-unit-price">
+                            Unit Price: {formatCurrency(item.price)}
+                          </span>
+                          <span className="item-total-price">
+                            Total: {formatCurrency(item.totalPrice || item.price * item.quantity)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment & Delivery Details */}
+              <div className="modal-section-grid">
+                <div className="modal-section">
+                  <h3><FaCreditCard /> Payment Details</h3>
+                  <div className="details-card">
+                    <div className="detail-row">
+                      <span>Payment Method</span>
+                      <span className="detail-value">
+                        {getPaymentMethodIcon(selectedOrder.paymentMethod)}
+                        {getPaymentMethodDisplay(selectedOrder.paymentMethod)}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Payment Status</span>
+                      <span className={`detail-value payment-status ${selectedOrder.paymentStatus?.toLowerCase()}`}>
+                        {selectedOrder.paymentStatus || 'Pending'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Transaction ID</span>
+                      <span className="detail-value transaction-id">
+                        {selectedOrder.transactionId || 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Payment Amount</span>
+                      <span className="detail-value">
+                        {formatCurrency(selectedOrder.paymentAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-section">
+                  <h3><FaTruck /> Delivery Details</h3>
+                  <div className="details-card">
+                    <div className="detail-row">
+                      <span>Delivery Address</span>
+                      <span className="detail-value">
+                        <FaMapMarkerAlt /> {selectedOrder.deliveryAddress}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Contact Number</span>
+                      <span className="detail-value">
+                        <FaPhone /> {selectedOrder.contactNumber}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>Estimated Delivery</span>
+                      <span className="detail-value">
+                        <FaClock /> {selectedOrder.deliveryTime}
+                      </span>
+                    </div>
+                    {selectedOrder.notes && (
+                      <div className="detail-row">
+                        <span>Special Instructions</span>
+                        <span className="detail-value notes">
+                          {selectedOrder.notes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="modal-section">
+                <h3>Order Summary</h3>
+                <div className="order-summary-card">
+                  <div className="summary-row">
+                    <span>Subtotal ({selectedOrder.itemCount} items)</span>
+                    <span>{formatCurrency(selectedOrder.subtotal || selectedOrder.total - (selectedOrder.deliveryFee || 50) - (selectedOrder.tax || 0))}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Delivery Fee</span>
+                    <span>{formatCurrency(selectedOrder.deliveryFee || 50)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Tax</span>
+                    <span>{formatCurrency(selectedOrder.tax || 0)}</span>
+                  </div>
+                  <div className="summary-row total">
+                    <span>Total Amount</span>
+                    <span>{formatCurrency(selectedOrder.total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Support */}
+              <div className="modal-section support-section">
+                <h3><FaEnvelope /> Need Help?</h3>
+                <p>If you have questions about your order, contact our support team.</p>
+                <div className="support-buttons">
+                  <button className="support-btn chat">
+                    <FaWhatsapp /> Chat Support
+                  </button>
+                  <button className="support-btn call">
+                    <FaPhone /> Call Support
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button className="modal-btn secondary" onClick={handleCloseDetails}>
+                Close
+              </button>
+              {selectedOrder.status === 'completed' && (
+                <button 
+                  className="modal-btn primary"
+                  onClick={() => {
+                    handleCloseDetails();
+                    handleReorder(selectedOrder);
+                  }}
+                >
+                  <FaRedo /> Reorder
+                </button>
+              )}
+              {selectedOrder.status === 'pending' && selectedOrder.backendStatus === 'PENDING' && (
+                <button 
+                  className="modal-btn danger"
+                  onClick={() => {
+                    handleCloseDetails();
+                    handleCancelOrder(selectedOrder);
+                  }}
+                >
+                  <FaTimesCircle /> Cancel Order
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

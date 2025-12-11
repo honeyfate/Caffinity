@@ -35,12 +35,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Find orders by user and status
     List<Order> findByUserAndStatus(User user, OrderStatus status);
     
-    // Custom query to find orders with items eagerly loaded
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.orderId = :orderId")
+    // *** FIXED: Now fetches products too ***
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderItems oi " +
+           "LEFT JOIN FETCH oi.product p " +  // CRITICAL: Added product fetch
+           "WHERE o.orderId = :orderId")
     Optional<Order> findByIdWithItems(@Param("orderId") Long orderId);
     
-    // Custom query to find user orders with items
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.user.userId = :userId ORDER BY o.orderDate DESC")
+    // *** FIXED: Now fetches products too ***
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderItems oi " +
+           "LEFT JOIN FETCH oi.product p " +  // CRITICAL: Added product fetch
+           "WHERE o.user.userId = :userId " +
+           "ORDER BY o.orderDate DESC")
     List<Order> findByUserIdWithItems(@Param("userId") Long userId);
     
     // Count orders by status

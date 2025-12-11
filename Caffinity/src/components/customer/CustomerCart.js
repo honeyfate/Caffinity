@@ -14,13 +14,12 @@ const CustomerCart = () => {
   const [orderedItems, setOrderedItems] = useState([]);
   const [orderDate, setOrderDate] = useState('');
   const [orderTotal, setOrderTotal] = useState(0);
-  const [tempCartItems, setTempCartItems] = useState([]);
   
   const [paymentInfo, setPaymentInfo] = useState({
     method: 'CREDIT_CARD',
   });
 
-  // Payment methods - REMOVED CASH ON PICKUP
+  // Payment methods
   const paymentMethods = [
     { id: 'CREDIT_CARD', label: 'Credit Card', icon: <FaCreditCard /> },
     { id: 'DEBIT_CARD', label: 'Debit Card', icon: <FaCreditCard /> },
@@ -39,7 +38,7 @@ const CustomerCart = () => {
     return sessionId;
   };
 
-  // Get logged-in user ID (MANDATORY for orders)
+  // Get logged-in user ID
   const getUserId = () => {
     const userData = localStorage.getItem('currentUser');
     if (!userData) {
@@ -67,6 +66,7 @@ const CustomerCart = () => {
       
       if (!userId) {
         console.warn('No user ID found, user might not be logged in');
+        setCartItems([]);
         return;
       }
 
@@ -89,6 +89,7 @@ const CustomerCart = () => {
     }
   };
 
+  // Load cart on component mount
   useEffect(() => {
     fetchCart();
   }, []);
@@ -113,7 +114,7 @@ const CustomerCart = () => {
     return item.product?.category || item.category || '';
   };
 
-  // FIXED: Use cartItemId as the unique identifier
+  // Use cartItemId as the unique identifier
   const getCartItemId = (item) => {
     return item.cartItemId || item.id;
   };
@@ -135,7 +136,7 @@ const CustomerCart = () => {
     return `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
   };
 
-  // FIXED: Handle checkbox selection using cartItemId
+  // Handle checkbox selection using cartItemId
   const handleSelectItem = (cartItemId) => {
     setSelectedItems(prev => {
       const newSelected = new Set(prev);
@@ -148,7 +149,7 @@ const CustomerCart = () => {
     });
   };
 
-  // FIXED: Select all items using cartItemId
+  // Select all items using cartItemId
   const handleSelectAll = () => {
     if (selectedItems.size === cartItems.length) {
       setSelectedItems(new Set());
@@ -158,7 +159,7 @@ const CustomerCart = () => {
     }
   };
 
-  // FIXED: Simplified quantity update without loading
+  // Simplified quantity update
   const handleQuantityUpdate = async (cartItemId, newQuantity) => {
     if (newQuantity < 1) {
       const item = cartItems.find(item => getCartItemId(item) === cartItemId);
@@ -166,18 +167,16 @@ const CustomerCart = () => {
       return;
     }
 
-    // Find the item to get productId for API call
     const item = cartItems.find(item => getCartItemId(item) === cartItemId);
     if (!item) return;
 
-    // Optimistic update - update UI immediately
+    // Optimistic update
     setCartItems(prevItems => 
       prevItems.map(item => 
         getCartItemId(item) === cartItemId ? { ...item, quantity: newQuantity } : item
       )
     );
 
-    // Update in database silently in background
     try {
       const sessionId = getSessionId();
       const userId = getUserId();
@@ -198,15 +197,9 @@ const CustomerCart = () => {
         }
       );
       
-      // Success - no UI feedback needed
     } catch (error) {
       console.error('Error updating cart:', error);
-      // Revert optimistic update on error
-      setCartItems(prevItems => 
-        prevItems.map(item => 
-          getCartItemId(item) === cartItemId ? { ...item, quantity: item.quantity } : item
-        )
-      );
+      fetchCart(); // Refresh on error
     }
   };
 
@@ -225,7 +218,7 @@ const CustomerCart = () => {
     setShowBulkDeleteModal(true);
   };
 
-  // FIXED: Remove item using proper identifiers
+  // Remove item from cart
   const removeFromCart = async (cartItemId) => {
     try {
       const sessionId = getSessionId();
@@ -256,13 +249,7 @@ const CustomerCart = () => {
       });
     } catch (error) {
       console.error('Error removing from cart:', error);
-      // Update UI even if API fails
-      setCartItems(prevItems => prevItems.filter(item => getCartItemId(item) !== cartItemId));
-      setSelectedItems(prev => {
-        const newSelected = new Set(prev);
-        newSelected.delete(cartItemId);
-        return newSelected;
-      });
+      fetchCart(); // Refresh on error
     }
   };
 
@@ -281,52 +268,15 @@ const CustomerCart = () => {
     setProductToDelete(null);
   };
 
-  // FIXED: Remove selected items using proper identifiers - ONLY called after successful order
-  const removeSelectedItems = async () => {
-    // Get all items to be removed for API calls
-    const itemsToRemove = tempCartItems.filter(item => 
-      selectedItems.has(getCartItemId(item))
-    );
-    
-    const sessionId = getSessionId();
-    const userId = getUserId();
-    
-    if (!userId) {
-      console.error('User must be logged in to remove items');
-      return;
-    }
-
-    // Remove from API one by one
-    for (const item of itemsToRemove) {
-      const productId = getProductId(item);
-      try {
-        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers: {
-            'X-Session-Id': sessionId,
-            'X-User-Id': userId
-          }
-        });
-      } catch (error) {
-        console.error('Error removing item:', error);
-      }
-    }
-    
-    // Update UI after all API calls - ONLY remove selected items, keep unchecked items
-    setCartItems(prevItems => 
-      prevItems.filter(item => !selectedItems.has(getCartItemId(item)))
-    );
-    
-    setSelectedItems(new Set());
-  };
+  // **REMOVED removeSelectedItems() - Backend will handle cart item deletion**
 
   // Bulk delete from cart (not for checkout)
   const removeSelectedItemsFromCart = async () => {
-    // Get all items to be removed for API calls
     const itemsToRemove = cartItems.filter(item => 
       selectedItems.has(getCartItemId(item))
     );
     
-    // Remove from UI immediately
+    // Update UI immediately
     setCartItems(prevItems => 
       prevItems.filter(item => !selectedItems.has(getCartItemId(item)))
     );
@@ -372,7 +322,7 @@ const CustomerCart = () => {
     }, 0);
   };
 
-  // FIXED: Get total price for selected items using cartItemId
+  // Get total price for selected items
   const getSelectedTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       if (selectedItems.has(getCartItemId(item))) {
@@ -383,7 +333,7 @@ const CustomerCart = () => {
     }, 0);
   };
 
-  // FIXED: Get total quantity for selected items using cartItemId
+  // Get total quantity for selected items
   const getSelectedTotalQuantity = () => {
     return cartItems.reduce((total, item) => {
       if (selectedItems.has(getCartItemId(item))) {
@@ -405,18 +355,16 @@ const CustomerCart = () => {
       return;
     }
     
-    // Check if user is logged in
     const userId = getUserId();
     if (!userId) {
       alert('You must be logged in to place an order!');
-      window.location.href = '/login'; // Redirect to login
+      window.location.href = '/login';
       return;
     }
     
     setCurrentStep(2);
     const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
     localStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
-    console.log('Proceeding to checkout with items:', selectedCartItems);
   };
 
   const handlePlaceOrder = async () => {
@@ -425,7 +373,6 @@ const CustomerCart = () => {
       return;
     }
 
-    // Check if user is logged in
     const userId = getUserId();
     if (!userId) {
       alert('You must be logged in to place an order!');
@@ -436,7 +383,6 @@ const CustomerCart = () => {
     try {
       const sessionId = getSessionId();
       
-      // Get user info from localStorage
       const userData = localStorage.getItem('currentUser');
       if (!userData) {
         throw new Error('User data not found');
@@ -444,7 +390,6 @@ const CustomerCart = () => {
       
       const user = JSON.parse(userData);
       
-      // Extract customer information
       const customerName = user.name || 
                          `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
                          user.username || 
@@ -454,17 +399,14 @@ const CustomerCart = () => {
       const customerEmail = user.email || '';
       const customerPhone = user.phone || user.phoneNumber || user.mobile || '';
       
-      // Get selected cart items
       const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
       
-      // Get current date for order
       const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
       
-      // Store ordered items with order date for confirmation page
       const orderedItemsData = selectedCartItems.map(item => ({
         ...item,
         orderDate: currentDate,
@@ -476,14 +418,9 @@ const CustomerCart = () => {
       setOrderedItems(orderedItemsData);
       setOrderDate(currentDate);
       
-      // Store the total amount BEFORE removing items
       const selectedTotal = getSelectedTotalPrice();
       setOrderTotal(selectedTotal);
       
-      // Store current cart items temporarily to preserve unchecked items
-      setTempCartItems([...cartItems]);
-      
-      // Prepare order data
       const orderData = {
         totalAmount: selectedTotal,
         orderItems: selectedCartItems.map(item => ({
@@ -502,53 +439,43 @@ const CustomerCart = () => {
         orderDate: currentDate
       };
 
-      console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+      console.log('Placing order with data:', orderData);
 
-      // Headers
       const headers = {
-        'X-Session-Id': sessionId,
+        'X-Session-Id': sessionId, // ADDED: Send session ID
         'X-User-Id': userId,
         'Content-Type': 'application/json'
       };
 
-      console.log('Headers:', headers);
-
-      // Create order
       const response = await axios.post('http://localhost:8080/api/orders', orderData, {
         headers
       });
 
       console.log('✅ Order created:', response.data);
 
-      // Save order ID for confirmation page
       setOrderId(response.data.orderId);
 
-      // Remove ordered items from cart (ONLY the checked/selected items)
-      // This will keep unchecked items in the cart
-      await removeSelectedItems();
+      // --- FIX STARTS HERE ---
+      // Filter out the ordered items from the local state immediately after successful order
+      // The backend should have deleted them from the DB, so this update is safe.
+      setCartItems(prevItems => 
+        prevItems.filter(item => !selectedItems.has(getCartItemId(item)))
+      );
       
-      // Move to confirmation step
+      // Clear selections
+      setSelectedItems(new Set());
+      // --- FIX ENDS HERE ---
+      
       setCurrentStep(3);
       
     } catch (error) {
       console.error('❌ Error creating order:', error);
-      console.error('❌ Error response:', error.response?.data);
       
-      // Show more specific error message
       if (error.response?.data?.message) {
         alert(`Failed to place order: ${error.response.data.message}`);
-      } else if (error.response?.data) {
-        alert(`Failed to place order: ${JSON.stringify(error.response.data)}`);
       } else {
         alert('Failed to place order. Please try again.');
       }
-    }
-  };
-
-  // Navigation between steps
-  const handleNextStep = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
     }
   };
 
@@ -558,7 +485,6 @@ const CustomerCart = () => {
     }
   };
 
-  // Handle payment method change
   const handlePaymentMethodChange = (method) => {
     setPaymentInfo(prev => ({
       ...prev,
@@ -566,14 +492,12 @@ const CustomerCart = () => {
     }));
   };
 
-  // FIXED: Get selected product names using cartItemId
   const getSelectedProductNames = () => {
     return cartItems
       .filter(item => selectedItems.has(getCartItemId(item)))
       .map(item => getItemName(item));
   };
 
-  // Get user info for display
   const getUserInfo = () => {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
@@ -591,17 +515,14 @@ const CustomerCart = () => {
     return { name: 'Customer', phone: '', email: '' };
   };
 
-  // Format price display
   const formatPrice = (price) => {
     return `₱${parseFloat(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   };
 
-  // Handle view orders button click
   const handleViewOrders = () => {
     window.location.href = '/customer/orders';
   };
 
-  // Render step content based on current step
   const renderStepContent = () => {
     const userInfo = getUserInfo();
     
@@ -759,7 +680,6 @@ const CustomerCart = () => {
                 <h3 className="card-title centered-title">Payment Method</h3>
               </div>
               <div className="card-content">
-                {/* Customer Info Display (Read-only) */}
                 <div className="customer-info-section">
                   <h4 className="form-section-title">Customer Information</h4>
                   <div className="customer-info-display">
@@ -782,7 +702,6 @@ const CustomerCart = () => {
                   </div>
                 </div>
                 
-                {/* Payment Method Section */}
                 <div className="payment-section">
                   <h4 className="form-section-title">Select Payment Method</h4>
                   <div className="payment-methods-grid">
@@ -806,7 +725,6 @@ const CustomerCart = () => {
                   </div>
                 </div>
                 
-                {/* Order Summary Preview */}
                 <div className="order-summary-preview">
                   <h4 className="form-section-title">Order Summary</h4>
                   <div className="preview-items">
@@ -854,7 +772,6 @@ const CustomerCart = () => {
                     <p>Thank you for your purchase. Your order has been confirmed and you will be notified if it is ready to pick up.</p>
                   </div>
                   
-                  {/* Ordered Items List - Shopping App Style */}
                   <div className="ordered-items-list">
                     {orderedItems.map((item, index) => (
                       <div key={index} className="ordered-item">
@@ -888,7 +805,6 @@ const CustomerCart = () => {
                     ))}
                   </div>
 
-                  {/* Order Summary Total - Use stored orderTotal */}
                   <div className="order-summary-total">
                     <div className="order-summary-total-row">
                       <span>Subtotal:</span>
@@ -904,7 +820,6 @@ const CustomerCart = () => {
                     </div>
                   </div>
 
-                  {/* Order Details */}
                   <div className="order-details">
                     <p><strong>Order ID:</strong> #{orderId || Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
                     <p><strong>Customer Name:</strong> {userInfo.name}</p>
@@ -929,7 +844,7 @@ const CustomerCart = () => {
                     setOrderId(null);
                     setOrderedItems([]);
                     setOrderTotal(0);
-                    fetchCart(); // Refresh cart to show remaining items
+                    // Cart state is already updated locally. A page refresh/re-mount will fetch the correct persistent state.
                   }}
                 >
                   Continue Shopping
@@ -1012,7 +927,6 @@ const CustomerCart = () => {
         <p>Review your items and proceed to checkout</p>
       </div>
 
-      {/* Progress Bar - Updated to 3 steps */}
       <div className="progress-container">
         <div className="progress-step">
           <div className={`circle ${currentStep >= 1 ? 'active' : ''}`}>1</div>
@@ -1037,7 +951,6 @@ const CustomerCart = () => {
       <div className={`cart-content ${currentStep === 1 ? 'cart-layout' : 'centered-layout'}`}>
         {renderStepContent()}
 
-        {/* Order Summary - Only show in Cart step */}
         {currentStep === 1 && (
           <div className="order-summary">
             <div className="content-card">

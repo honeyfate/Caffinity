@@ -183,3 +183,16 @@ html, body {
     transform: translateY(0);
   }
 }
+
+/* Add this to App.css or index.css */
+body.modal-open,
+html.modal-open {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+/* Prevent any parent from blurring */
+* {
+  backdrop-filter: none !important;
+}

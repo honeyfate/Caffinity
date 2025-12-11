@@ -272,10 +272,35 @@ public class OrderService {
         return orderRepository.findByIdWithItems(id);
     }
 
-    // Get orders by user ID
+    // *** UPDATED: Get orders by user ID with DEBUG LOGGING ***
     public List<Order> getOrdersByUserId(Long userId) {
         System.out.println("📋 Fetching orders for user ID: " + userId);
-        return orderRepository.findByUserIdWithItems(userId);
+        List<Order> orders = orderRepository.findByUserIdWithItems(userId);
+        
+        // DEBUG: Check if products are loaded
+        System.out.println("🔍 DEBUG - Checking product data in " + orders.size() + " orders:");
+        for (Order order : orders) {
+            System.out.println("   Order #" + order.getOrderId() + " has " + 
+                            (order.getOrderItems() != null ? order.getOrderItems().size() : 0) + " items");
+            
+            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                for (int i = 0; i < Math.min(order.getOrderItems().size(), 3); i++) {
+                    OrderItem item = order.getOrderItems().get(i);
+                    System.out.println("     Item " + (i+1) + ":");
+                    System.out.println("       OrderItem ID: " + item.getOrderItemId());
+                    System.out.println("       Quantity: " + item.getQuantity());
+                    
+                    if (item.getProduct() != null) {
+                        System.out.println("       Product: " + item.getProduct().getName() +  " (ID: " + item.getProduct().getProductId() + ")");
+                        System.out.println("       Product exists? " + (item.getProduct() != null));
+                    } else {
+                        System.out.println("       ❌ ERROR: Product is NULL!");
+                    }
+                }
+            }
+        }
+        
+        return orders;
     }
 
     // Get orders by status

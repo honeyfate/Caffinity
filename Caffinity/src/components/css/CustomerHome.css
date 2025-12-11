@@ -7,6 +7,17 @@
   color: #333;
 }
 
+.home-section {
+  position: relative;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  overflow: hidden;
+}
+
 .home-section::before {
   content: '';
   position: absolute;
@@ -15,6 +26,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .home-content {
@@ -22,17 +34,30 @@
   z-index: 2;
   max-width: 800px;
   padding: 0 20px;
-  margin-top: -90px;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .home-content h1 {
   font-size: 3rem;
   margin-bottom: 20px;
   font-weight: 600;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .caffinity-highlight {
-  color: #8B4513;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 .home-content p {
@@ -52,31 +77,41 @@
 .button {
   padding: 12px 30px;
   border: none;
-  border-radius: 4px;
+  border-radius: 50px;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 200px;
 }
 
 .coffee-button {
-  background: #8B4513;
+  background: linear-gradient(135deg, #8B4513, #654321);
   color: white;
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
 }
 
 .coffee-button:hover {
-  background: #654321;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+  background: linear-gradient(135deg, #654321, #8B4513);
 }
 
 .desserts-button {
   background: transparent;
   color: white;
   border: 2px solid white;
+  backdrop-filter: blur(5px);
 }
 
 .desserts-button:hover {
   background: white;
   color: #8B4513;
+  transform: translateY(-2px);
 }
 
 /* Dashboard Container */
@@ -84,6 +119,16 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 60px 20px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .welcome-section {
@@ -96,6 +141,9 @@
   font-size: 2.5rem;
   color: #2c1a0a;
   margin-bottom: 15px;
+  background: linear-gradient(135deg, #8B4513, #D2691E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .welcome-section p {
@@ -121,6 +169,26 @@
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   border: 1px solid #f0f0f0;
+  animation: cardAppear 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.content-card:nth-child(1) { animation-delay: 0.1s; }
+.content-card:nth-child(2) { animation-delay: 0.2s; }
+.content-card:nth-child(3) { animation-delay: 0.3s; }
+.content-card:nth-child(4) { animation-delay: 0.4s; }
+.content-card:nth-child(5) { animation-delay: 0.5s; }
+.content-card:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .content-card:hover {
@@ -136,15 +204,19 @@
 }
 
 .card-icon {
-  font-size: 2rem;
   background: linear-gradient(135deg, #8b4513, #a0522d);
   color: white;
   width: 50px;
   height: 50px;
-  border-radius: 50%;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.5rem;
+}
+
+.card-icon-svg {
+  font-size: 1.5rem;
 }
 
 .card-title {
@@ -196,11 +268,19 @@
 .status-active {
   background: rgba(76, 175, 80, 0.1);
   color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
 .status-pending {
   background: rgba(255, 152, 0, 0.1);
   color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.status-cancelled {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.2);
 }
 
 .card-actions {
@@ -220,7 +300,10 @@
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
 }
 
@@ -239,6 +322,11 @@
 .card-btn.secondary:hover {
   background: #8b4513;
   color: white;
+}
+
+.card-btn.small {
+  padding: 8px 16px;
+  font-size: 0.8rem;
 }
 
 /* Progress Bar */
@@ -265,6 +353,11 @@
   align-items: center;
   padding: 15px 0;
   border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.order-item:hover {
+  background-color: rgba(139, 69, 19, 0.05);
 }
 
 .order-info {
@@ -291,6 +384,7 @@
 .order-price {
   color: #8b4513;
   font-weight: 600;
+  font-size: 1.1rem;
 }
 
 /* Featured Items */
@@ -300,6 +394,11 @@
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid rgba(139, 69, 19, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.featured-item:hover {
+  background-color: rgba(139, 69, 19, 0.05);
 }
 
 .featured-info {
@@ -310,17 +409,49 @@
   color: #2c1a0a;
   font-weight: 600;
   margin-bottom: 3px;
+  font-size: 1rem;
 }
 
 .featured-description {
   color: #666;
   font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.featured-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ff9800;
+  font-size: 0.85rem;
+}
+
+.star-icon {
+  font-size: 0.8rem;
 }
 
 .featured-price {
   color: #8b4513;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+/* Loading States */
+.loading {
+  text-align: center;
+  padding: 30px 0;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-orders {
+  text-align: center;
+  padding: 30px 0;
+}
+
+.empty-orders p {
+  margin-bottom: 15px;
+  color: #666;
 }
 
 /* Responsive Design */
@@ -336,9 +467,17 @@
   .cards-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .welcome-section h1 {
+    font-size: 2.2rem;
+  }
 }
 
 @media (max-width: 768px) {
+  .home-section {
+    height: 70vh;
+  }
+  
   .home-content h1 {
     font-size: 2rem;
     margin-bottom: 15px;
@@ -359,6 +498,8 @@
     padding: 10px 25px;
     font-size: 0.9rem;
     min-width: 180px;
+    width: 100%;
+    max-width: 250px;
   }
   
   .cards-grid {
@@ -372,10 +513,16 @@
   .welcome-section p {
     font-size: 1.1rem;
   }
+  
+  .card-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
   .home-section {
+    height: 60vh;
     padding: 0 15px;
   }
   
@@ -399,5 +546,27 @@
   
   .welcome-section h1 {
     font-size: 1.8rem;
+  }
+  
+  .welcome-section p {
+    font-size: 1rem;
+  }
+  
+  .content-card {
+    padding: 20px;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .card-title {
+    font-size: 1.2rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
   }
 }

@@ -223,7 +223,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    color: #2c1a0a;
+    color: #ffffff;
     margin-bottom: 20px;
     font-size: 1.4rem;
 }
@@ -394,7 +394,7 @@
 
 .input-wrapper input:focus {
     outline: none;
-    border-color: #8b4513;
+    border-color: #ffffff;
     box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
 }
 

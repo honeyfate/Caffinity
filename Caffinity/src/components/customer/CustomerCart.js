@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUser, FaPhone, FaCreditCard, FaMobile, FaCheck, FaArrowLeft } from 'react-icons/fa';
+import { FaCreditCard, FaMobile, FaCheck, FaArrowLeft, FaWallet, FaUniversity, FaListAlt } from 'react-icons/fa';
 import '../css/CustomerCart.css';
 
 const CustomerCart = () => {
@@ -11,18 +11,23 @@ const CustomerCart = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [orderId, setOrderId] = useState(null);
+  const [orderedItems, setOrderedItems] = useState([]);
+  const [orderDate, setOrderDate] = useState('');
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [tempCartItems, setTempCartItems] = useState([]);
   
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    phone: ''
+  const [paymentInfo, setPaymentInfo] = useState({
+    method: 'CREDIT_CARD',
   });
 
-  const [paymentInfo, setPaymentInfo] = useState({
-    method: 'CARD',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: ''
-  });
+  // Payment methods - REMOVED CASH ON PICKUP
+  const paymentMethods = [
+    { id: 'CREDIT_CARD', label: 'Credit Card', icon: <FaCreditCard /> },
+    { id: 'DEBIT_CARD', label: 'Debit Card', icon: <FaCreditCard /> },
+    { id: 'GCASH', label: 'Gcash', icon: <FaMobile /> },
+    { id: 'PAYMAYA', label: 'PayMaya', icon: <FaWallet /> },
+    { id: 'BANK_TRANSFER', label: 'Bank Transfer', icon: <FaUniversity /> }
+  ];
 
   // Generate or get session ID
   const getSessionId = () => {
@@ -34,14 +39,24 @@ const CustomerCart = () => {
     return sessionId;
   };
 
-  // Get logged-in user ID (optional - for authenticated users)
+  // Get logged-in user ID (MANDATORY for orders)
   const getUserId = () => {
     const userData = localStorage.getItem('currentUser');
-    if (userData) {
-      const user = JSON.parse(userData);
-      return user.userId || null;
+    if (!userData) {
+      console.error('No user found. User must be logged in to place orders.');
+      return null;
     }
-    return null;
+    try {
+      const user = JSON.parse(userData);
+      if (!user.userId) {
+        console.error('User ID not found in user data');
+        return null;
+      }
+      return user.userId;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   };
 
   // Load cart from database
@@ -50,10 +65,12 @@ const CustomerCart = () => {
       const sessionId = getSessionId();
       const userId = getUserId();
       
-      const headers = { 'X-Session-Id': sessionId };
-      if (userId) {
-        headers['X-User-Id'] = userId;
+      if (!userId) {
+        console.warn('No user ID found, user might not be logged in');
+        return;
       }
+
+      const headers = { 'X-Session-Id': sessionId, 'X-User-Id': userId };
 
       const response = await axios.get('http://localhost:8080/api/cart', { headers });
       
@@ -64,48 +81,17 @@ const CustomerCart = () => {
       } else if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
-        // Fallback to localStorage if needed
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
-          setCartItems(JSON.parse(savedCart));
-        } else {
-          setCartItems([]);
-        }
+        setCartItems([]);
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // Fallback to localStorage
-      const savedCart = localStorage.getItem('cart');
-      if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
-      }
+      setCartItems([]);
     }
   };
 
   useEffect(() => {
     fetchCart();
   }, []);
-
-  // ADD THIS: Migrate cart when user logs in
-  const migrateCartAfterLogin = async (userId) => {
-    try {
-      const sessionId = getSessionId();
-      await axios.post('http://localhost:8080/api/cart/migrate', 
-        {},
-        { 
-          headers: { 
-            'X-Session-Id': sessionId,
-            'X-User-Id': userId 
-          } 
-        }
-      );
-      console.log('Cart migrated successfully after login');
-      // Refresh cart data after migration
-      fetchCart();
-    } catch (error) {
-      console.error('Error migrating cart:', error);
-    }
-  };
 
   // Safe function to get item name
   const getItemName = (item) => {
@@ -195,16 +181,21 @@ const CustomerCart = () => {
     try {
       const sessionId = getSessionId();
       const userId = getUserId();
+      if (!userId) {
+        console.error('User must be logged in to update cart');
+        return;
+      }
+      
       const productId = getProductId(item);
       
-      const headers = { 'X-Session-Id': sessionId };
-      if (userId) {
-        headers['X-User-Id'] = userId;
-      }
-
       await axios.put('http://localhost:8080/api/cart/update', 
         { productId, quantity: newQuantity },
-        { headers }
+        { 
+          headers: {
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId
+          }
+        }
       );
       
       // Success - no UI feedback needed
@@ -239,17 +230,20 @@ const CustomerCart = () => {
     try {
       const sessionId = getSessionId();
       const userId = getUserId();
+      if (!userId) {
+        console.error('User must be logged in to remove from cart');
+        return;
+      }
+      
       const item = cartItems.find(item => getCartItemId(item) === cartItemId);
       
-      const headers = { 'X-Session-Id': sessionId };
-      if (userId) {
-        headers['X-User-Id'] = userId;
-      }
-
       if (item) {
         const productId = getProductId(item);
         await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers
+          headers: {
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId
+          }
         });
       }
       
@@ -287,8 +281,46 @@ const CustomerCart = () => {
     setProductToDelete(null);
   };
 
-  // FIXED: Remove selected items using proper identifiers
+  // FIXED: Remove selected items using proper identifiers - ONLY called after successful order
   const removeSelectedItems = async () => {
+    // Get all items to be removed for API calls
+    const itemsToRemove = tempCartItems.filter(item => 
+      selectedItems.has(getCartItemId(item))
+    );
+    
+    const sessionId = getSessionId();
+    const userId = getUserId();
+    
+    if (!userId) {
+      console.error('User must be logged in to remove items');
+      return;
+    }
+
+    // Remove from API one by one
+    for (const item of itemsToRemove) {
+      const productId = getProductId(item);
+      try {
+        await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
+          headers: {
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId
+          }
+        });
+      } catch (error) {
+        console.error('Error removing item:', error);
+      }
+    }
+    
+    // Update UI after all API calls - ONLY remove selected items, keep unchecked items
+    setCartItems(prevItems => 
+      prevItems.filter(item => !selectedItems.has(getCartItemId(item)))
+    );
+    
+    setSelectedItems(new Set());
+  };
+
+  // Bulk delete from cart (not for checkout)
+  const removeSelectedItemsFromCart = async () => {
     // Get all items to be removed for API calls
     const itemsToRemove = cartItems.filter(item => 
       selectedItems.has(getCartItemId(item))
@@ -303,16 +335,20 @@ const CustomerCart = () => {
     const sessionId = getSessionId();
     const userId = getUserId();
     
-    const headers = { 'X-Session-Id': sessionId };
-    if (userId) {
-      headers['X-User-Id'] = userId;
+    if (!userId) {
+      console.error('User must be logged in to remove items');
+      setShowBulkDeleteModal(false);
+      return;
     }
 
     for (const item of itemsToRemove) {
       const productId = getProductId(item);
       try {
         await axios.delete(`http://localhost:8080/api/cart/remove/${productId}`, {
-          headers
+          headers: {
+            'X-Session-Id': sessionId,
+            'X-User-Id': userId
+          }
         });
       } catch (error) {
         console.error('Error removing item:', error);
@@ -369,104 +405,149 @@ const CustomerCart = () => {
       return;
     }
     
+    // Check if user is logged in
+    const userId = getUserId();
+    if (!userId) {
+      alert('You must be logged in to place an order!');
+      window.location.href = '/login'; // Redirect to login
+      return;
+    }
+    
     setCurrentStep(2);
     const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
     localStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
     console.log('Proceeding to checkout with items:', selectedCartItems);
   };
 
-  // NEW: Handle place order - create order in backend
-  // In CustomerCart.js, update the handlePlaceOrder function:
-
-const handlePlaceOrder = async () => {
-  if (selectedItems.size === 0) {
-    alert('Please select at least one item to checkout!');
-    return;
-  }
-
-  if (!customerInfo.name || !customerInfo.phone) {
-    alert('Please fill in customer information');
-    return;
-  }
-
-  try {
-    const sessionId = getSessionId();
-    const userId = getUserId();
-    const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
-    
-    // FIX: Map frontend payment method to backend enum
-    const getBackendPaymentMethod = (frontendMethod) => {
-      if (frontendMethod === 'CARD') {
-        return 'CREDIT_CARD';  // Map 'CARD' to 'CREDIT_CARD'
-      }
-      return frontendMethod;   // 'GCASH' stays as 'GCASH'
-    };
-    
-    // FIXED: Prepare order data with proper payment values
-    const orderData = {
-      customerName: customerInfo.name,
-      customerPhone: customerInfo.phone,
-      totalAmount: getSelectedTotalPrice(),
-      orderItems: selectedCartItems.map(item => ({
-        productId: getProductId(item),
-        productName: getItemName(item),
-        quantity: item.quantity,
-        price: getItemPrice(item),
-        totalPrice: getItemPrice(item) * item.quantity
-      })),
-      // FIX: Send correct enum values
-      paymentMethod: getBackendPaymentMethod(paymentInfo.method),
-      // FIX: Always send 'PENDING' as initial status
-      paymentStatus: 'PENDING'
-    };
-
-    // ===== DEBUGGING LOGS =====
-    console.log('🔍 DEBUG: Full orderData being sent:');
-    console.log(JSON.stringify(orderData, null, 2));
-    console.log('🔍 paymentMethod value:', orderData.paymentMethod);
-    console.log('🔍 paymentMethod type:', typeof orderData.paymentMethod);
-    console.log('🔍 paymentStatus value:', orderData.paymentStatus);
-    console.log('💰 Sending order data:', {
-      frontendPaymentMethod: paymentInfo.method,
-      backendPaymentMethod: orderData.paymentMethod,
-      paymentStatus: orderData.paymentStatus,
-      totalAmount: orderData.totalAmount
-    });
-    // ===== END DEBUGGING =====
-
-    const headers = { 'X-Session-Id': sessionId };
-    if (userId) {
-      headers['X-User-Id'] = userId;
+  const handlePlaceOrder = async () => {
+    if (selectedItems.size === 0) {
+      alert('Please select at least one item to checkout!');
+      return;
     }
 
-    // Create order
-    const response = await axios.post('http://localhost:8080/api/orders', orderData, {
-      headers
-    });
+    // Check if user is logged in
+    const userId = getUserId();
+    if (!userId) {
+      alert('You must be logged in to place an order!');
+      window.location.href = '/login';
+      return;
+    }
 
-    console.log('✅ Order created:', response.data);
-    console.log('💰 Saved Payment Method:', response.data.paymentMethod);
-    console.log('💰 Saved Transaction ID:', response.data.transactionId);
+    try {
+      const sessionId = getSessionId();
+      
+      // Get user info from localStorage
+      const userData = localStorage.getItem('currentUser');
+      if (!userData) {
+        throw new Error('User data not found');
+      }
+      
+      const user = JSON.parse(userData);
+      
+      // Extract customer information
+      const customerName = user.name || 
+                         `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+                         user.username || 
+                         user.email?.split('@')[0] || 
+                         'Customer';
+      
+      const customerEmail = user.email || '';
+      const customerPhone = user.phone || user.phoneNumber || user.mobile || '';
+      
+      // Get selected cart items
+      const selectedCartItems = cartItems.filter(item => selectedItems.has(getCartItemId(item)));
+      
+      // Get current date for order
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Store ordered items with order date for confirmation page
+      const orderedItemsData = selectedCartItems.map(item => ({
+        ...item,
+        orderDate: currentDate,
+        name: getItemName(item),
+        price: getItemPrice(item),
+        imageUrl: getProductImage(item)
+      }));
+      
+      setOrderedItems(orderedItemsData);
+      setOrderDate(currentDate);
+      
+      // Store the total amount BEFORE removing items
+      const selectedTotal = getSelectedTotalPrice();
+      setOrderTotal(selectedTotal);
+      
+      // Store current cart items temporarily to preserve unchecked items
+      setTempCartItems([...cartItems]);
+      
+      // Prepare order data
+      const orderData = {
+        totalAmount: selectedTotal,
+        orderItems: selectedCartItems.map(item => ({
+          productId: getProductId(item),
+          productName: getItemName(item),
+          quantity: item.quantity,
+          price: getItemPrice(item),
+          totalPrice: getItemPrice(item) * item.quantity
+        })),
+        paymentMethod: paymentInfo.method,
+        paymentStatus: 'PENDING',
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        userId: userId,
+        orderDate: currentDate
+      };
 
-    // Save order ID for confirmation page
-    setOrderId(response.data.orderId);
+      console.log('Sending order data:', JSON.stringify(orderData, null, 2));
 
-    // Remove ordered items from cart
-    await removeSelectedItems();
-    
-    // Move to confirmation step
-    setCurrentStep(4);
-    
-  } catch (error) {
-    console.error('❌ Error creating order:', error);
-    console.error('❌ Error response:', error.response?.data);
-    alert('Failed to place order. Please try again.');
-  }
-};
+      // Headers
+      const headers = {
+        'X-Session-Id': sessionId,
+        'X-User-Id': userId,
+        'Content-Type': 'application/json'
+      };
+
+      console.log('Headers:', headers);
+
+      // Create order
+      const response = await axios.post('http://localhost:8080/api/orders', orderData, {
+        headers
+      });
+
+      console.log('✅ Order created:', response.data);
+
+      // Save order ID for confirmation page
+      setOrderId(response.data.orderId);
+
+      // Remove ordered items from cart (ONLY the checked/selected items)
+      // This will keep unchecked items in the cart
+      await removeSelectedItems();
+      
+      // Move to confirmation step
+      setCurrentStep(3);
+      
+    } catch (error) {
+      console.error('❌ Error creating order:', error);
+      console.error('❌ Error response:', error.response?.data);
+      
+      // Show more specific error message
+      if (error.response?.data?.message) {
+        alert(`Failed to place order: ${error.response.data.message}`);
+      } else if (error.response?.data) {
+        alert(`Failed to place order: ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert('Failed to place order. Please try again.');
+      }
+    }
+  };
 
   // Navigation between steps
   const handleNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -475,22 +556,6 @@ const handlePlaceOrder = async () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  // Handle customer info change
-  const handleCustomerInfoChange = (field, value) => {
-    setCustomerInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Handle payment info change
-  const handlePaymentInfoChange = (field, value) => {
-    setPaymentInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   // Handle payment method change
@@ -508,8 +573,38 @@ const handlePlaceOrder = async () => {
       .map(item => getItemName(item));
   };
 
+  // Get user info for display
+  const getUserInfo = () => {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        return {
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Customer',
+          phone: user.phoneNumber || user.phone || '',
+          email: user.email || ''
+        };
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+    return { name: 'Customer', phone: '', email: '' };
+  };
+
+  // Format price display
+  const formatPrice = (price) => {
+    return `₱${parseFloat(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  };
+
+  // Handle view orders button click
+  const handleViewOrders = () => {
+    window.location.href = '/customer/orders';
+  };
+
   // Render step content based on current step
   const renderStepContent = () => {
+    const userInfo = getUserInfo();
+    
     switch(currentStep) {
       case 1: // Cart
         return (
@@ -646,7 +741,7 @@ const handlePlaceOrder = async () => {
           </div>
         );
 
-      case 2: // Customer Information - CENTERED
+      case 2: // Payment
         return (
           <div className="centered-step-container">
             <div className="top-back-button-container">
@@ -661,133 +756,55 @@ const handlePlaceOrder = async () => {
             
             <div className="content-card centered-card">
               <div className="card-header">
-                <h3 className="card-title">Customer Information</h3>
-              </div>
-              <div className="card-content">
-                <div className="checkout-form">
-                  <div className="form-section">
-                    <h4 className="form-section-title">Contact Details</h4>
-                    <div className="form-group">
-                      <label className="form-label">
-                        <FaUser className="form-icon" />
-                        Full Name
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="Enter your full name" 
-                        className="form-input"
-                        value={customerInfo.name}
-                        onChange={(e) => handleCustomerInfoChange('name', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label className="form-label">
-                        <FaPhone className="form-icon" />
-                        Phone Number
-                      </label>
-                      <input 
-                        type="tel" 
-                        placeholder="Enter your phone number" 
-                        className="form-input"
-                        value={customerInfo.phone}
-                        onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="card-actions">
-                <button 
-                  className="card-btn" 
-                  onClick={handleNextStep}
-                  disabled={!customerInfo.name || !customerInfo.phone}
-                >
-                  Continue to Payment
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3: // Payment - CENTERED
-        return (
-          <div className="centered-step-container">
-            <div className="content-card centered-card">
-              <div className="card-header with-back-button">
-                <button 
-                  className="back-button"
-                  onClick={handlePrevStep}
-                >
-                  <FaArrowLeft className="back-icon" />
-                  Back
-                </button>
                 <h3 className="card-title centered-title">Payment Method</h3>
-                <div className="header-spacer"></div>
               </div>
               <div className="card-content">
-                <div className="payment-section">
-                  <h4 className="form-section-title">Select Payment Method</h4>
-                  <div className="payment-methods">
-                    <div className="payment-option">
-                      <input 
-                        type="radio" 
-                        id="card" 
-                        name="payment" 
-                        checked={paymentInfo.method === 'CARD'}
-                        onChange={() => handlePaymentMethodChange('CARD')}
-                      />
-                      <label htmlFor="card">
-                        <FaCreditCard className="payment-icon" />
-                        Credit/Debit Card
-                      </label>
+                {/* Customer Info Display (Read-only) */}
+                <div className="customer-info-section">
+                  <h4 className="form-section-title">Customer Information</h4>
+                  <div className="customer-info-display">
+                    <div className="info-row">
+                      <span className="info-label">Name:</span>
+                      <span className="info-value">{userInfo.name}</span>
                     </div>
-                    <div className="payment-option">
-                      <input 
-                        type="radio" 
-                        id="gcash" 
-                        name="payment" 
-                        checked={paymentInfo.method === 'GCASH'}
-                        onChange={() => handlePaymentMethodChange('GCASH')}
-                      />
-                      <label htmlFor="gcash">
-                        <FaMobile className="payment-icon" />
-                        Gcash
-                      </label>
-                    </div>
+                    {userInfo.phone && (
+                      <div className="info-row">
+                        <span className="info-label">Phone:</span>
+                        <span className="info-value">{userInfo.phone}</span>
+                      </div>
+                    )}
+                    {userInfo.email && (
+                      <div className="info-row">
+                        <span className="info-label">Email:</span>
+                        <span className="info-value">{userInfo.email}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
-                {paymentInfo.method === 'CARD' && (
-                  <div className="card-details-section">
-                    <h4 className="form-section-title">Payment Details</h4>
-                    <div className="form-group">
-                      <input 
-                        type="text" 
-                        placeholder="Card Number" 
-                        className="form-input"
-                        value={paymentInfo.cardNumber}
-                        onChange={(e) => handlePaymentInfoChange('cardNumber', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-row">
-                      <input 
-                        type="text" 
-                        placeholder="Expiry Date (MM/YY)" 
-                        className="form-input"
-                        value={paymentInfo.expiryDate}
-                        onChange={(e) => handlePaymentInfoChange('expiryDate', e.target.value)}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="CVV" 
-                        className="form-input"
-                        value={paymentInfo.cvv}
-                        onChange={(e) => handlePaymentInfoChange('cvv', e.target.value)}
-                      />
-                    </div>
+                {/* Payment Method Section */}
+                <div className="payment-section">
+                  <h4 className="form-section-title">Select Payment Method</h4>
+                  <div className="payment-methods-grid">
+                    {paymentMethods.map(method => (
+                      <div 
+                        key={method.id}
+                        className={`payment-method-card ${paymentInfo.method === method.id ? 'selected' : ''}`}
+                        onClick={() => handlePaymentMethodChange(method.id)}
+                      >
+                        <div className="payment-method-icon">
+                          {method.icon}
+                        </div>
+                        <div className="payment-method-label">
+                          {method.label}
+                        </div>
+                        <div className="payment-method-check">
+                          {paymentInfo.method === method.id && <FaCheck />}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
                 
                 {/* Order Summary Preview */}
                 <div className="order-summary-preview">
@@ -820,46 +837,99 @@ const handlePlaceOrder = async () => {
           </div>
         );
 
-      case 4: // Confirmation - CENTERED
+      case 3: // Confirmation
         return (
           <div className="centered-step-container">
             <div className="content-card centered-card">
-              <div className="card-header with-back-button">
-                <button 
-                  className="back-button"
-                  onClick={() => setCurrentStep(1)}
-                >
-                  <FaArrowLeft className="back-icon" />
-                  Back to Cart
-                </button>
+              <div className="card-header">
                 <h3 className="card-title centered-title">Order Confirmation</h3>
-                <div className="header-spacer"></div>
               </div>
               <div className="card-content">
                 <div className="confirmation-message">
-                  <div className="success-icon">
-                    <FaCheck />
+                  <div className="confirmation-header">
+                    <div className="success-icon">
+                      <FaCheck />
+                    </div>
+                    <h3>Order Placed Successfully!</h3>
+                    <p>Thank you for your purchase. Your order has been confirmed and you will be notified if it is ready to pick up.</p>
                   </div>
-                  <h3>Order Placed Successfully!</h3>
-                  <p>Thank you for your purchase. Your order has been confirmed and you will be notified if it is ready to pick up.</p>
+                  
+                  {/* Ordered Items List - Shopping App Style */}
+                  <div className="ordered-items-list">
+                    {orderedItems.map((item, index) => (
+                      <div key={index} className="ordered-item">
+                        <div className="ordered-item-image">
+                          <img 
+                            src={getProductImage(item)} 
+                            alt={getItemName(item)}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://via.placeholder.com/80x80/8B4513/ffffff?text=${encodeURIComponent(getItemName(item).charAt(0))}`;
+                            }}
+                          />
+                        </div>
+                        <div className="ordered-item-details">
+                          <div className="ordered-item-info">
+                            <h4 className="ordered-item-name">{getItemName(item)}</h4>
+                            <div className="ordered-item-date">
+                              {orderDate}
+                            </div>
+                            <div className="ordered-item-quantity">
+                              Quantity: {item.quantity}
+                            </div>
+                          </div>
+                          <div className="ordered-item-total">
+                            <div className="ordered-item-price">
+                              {formatPrice(getItemPrice(item) * item.quantity)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Summary Total - Use stored orderTotal */}
+                  <div className="order-summary-total">
+                    <div className="order-summary-total-row">
+                      <span>Subtotal:</span>
+                      <span>{formatPrice(orderTotal)}</span>
+                    </div>
+                    <div className="order-summary-total-row">
+                      <span>Discount:</span>
+                      <span>₱0.00</span>
+                    </div>
+                    <div className="order-summary-total-row grand-total">
+                      <span>Total Amount:</span>
+                      <span>{formatPrice(orderTotal)}</span>
+                    </div>
+                  </div>
+
+                  {/* Order Details */}
                   <div className="order-details">
                     <p><strong>Order ID:</strong> #{orderId || Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
-                    <p><strong>Customer Name:</strong> {customerInfo.name}</p>
-                    <p><strong>Phone:</strong> {customerInfo.phone}</p>
-                    <p><strong>Total Amount:</strong> ₱{getSelectedTotalPrice().toFixed(2)}</p>
+                    <p><strong>Customer Name:</strong> {userInfo.name}</p>
+                    <p><strong>Payment Method:</strong> {paymentInfo.method.replace('_', ' ')}</p>
                   </div>
                 </div>
               </div>
               <div className="card-actions">
                 <button 
+                  className="card-btn secondary"
+                  onClick={handleViewOrders}
+                >
+                  <FaListAlt style={{ marginRight: '8px' }} />
+                  View Orders
+                </button>
+                <button 
                   className="card-btn" 
                   onClick={() => {
                     setCurrentStep(1);
                     setSelectedItems(new Set());
-                    setCustomerInfo({ name: '', phone: '' });
-                    setPaymentInfo({ method: 'CARD', cardNumber: '', expiryDate: '', cvv: '' });
+                    setPaymentInfo({ method: 'CREDIT_CARD' });
                     setOrderId(null);
-                    fetchCart();
+                    setOrderedItems([]);
+                    setOrderTotal(0);
+                    fetchCart(); // Refresh cart to show remaining items
                   }}
                 >
                   Continue Shopping
@@ -928,7 +998,7 @@ const handlePlaceOrder = async () => {
               </button>
               <button 
                 className="modal-btn confirm-btn"
-                onClick={removeSelectedItems}
+                onClick={removeSelectedItemsFromCart}
               >
                 Remove {selectedItems.size} Items
               </button>
@@ -942,7 +1012,7 @@ const handlePlaceOrder = async () => {
         <p>Review your items and proceed to checkout</p>
       </div>
 
-      {/* Progress Bar */}
+      {/* Progress Bar - Updated to 3 steps */}
       <div className="progress-container">
         <div className="progress-step">
           <div className={`circle ${currentStep >= 1 ? 'active' : ''}`}>1</div>
@@ -953,20 +1023,13 @@ const handlePlaceOrder = async () => {
 
         <div className="progress-step">
           <div className={`circle ${currentStep >= 2 ? 'active' : ''}`}>2</div>
-          <span>Information</span>
-        </div>
-
-        <div className="progress-line"></div>
-
-        <div className="progress-step">
-          <div className={`circle ${currentStep >= 3 ? 'active' : ''}`}>3</div>
           <span>Payment</span>
         </div>
 
         <div className="progress-line"></div>
 
         <div className="progress-step">
-          <div className={`circle ${currentStep >= 4 ? 'active' : ''}`}>4</div>
+          <div className={`circle ${currentStep >= 3 ? 'active' : ''}`}>3</div>
           <span>Confirmation</span>
         </div>
       </div>
@@ -995,13 +1058,8 @@ const handlePlaceOrder = async () => {
                     ₱{selectedItems.size > 0 ? getSelectedTotalPrice().toFixed(2) : getTotalPrice().toFixed(2)}
                   </span>
                 </div>
-                {/* REMOVED SHIPPING ROW */}
                 <div className="summary-row">
                   <span>Discount:</span>
-                  <span>₱0.00</span>
-                </div>
-                <div className="summary-row">
-                  <span>Voucher:</span>
                   <span>₱0.00</span>
                 </div>
                 <div className="summary-row total">

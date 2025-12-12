@@ -21,8 +21,8 @@ const AdminHome = () => {
   return (
     <div className="admin-home">
       <div className="welcome-section">
-        <h1>Admin Dashboard</h1>
-        <p>Welcome back! Here's what's happening with your cafe today.</p>
+        <h1 style={{ color: 'yellow' }}>Admin Dashboard</h1>
+        <p style={{ color: 'yellow' }}>Welcome back! Here's what's happening with your cafe today.</p>
       </div>
 
       {/* Statistics Cards */}

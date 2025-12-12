@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomerDashboard from './CustomerDashboard';
 import '../css/CustomerOrders.css';
+
 import { 
   FaReceipt, 
   FaCalendarAlt, 
@@ -22,9 +23,7 @@ import {
   FaTruck,
   FaPhone,
   FaEnvelope,
-  FaPrint,
   FaWhatsapp,
-  FaStar,
   FaUser
 } from 'react-icons/fa';
 import axios from 'axios';
@@ -37,6 +36,7 @@ const CustomerOrders = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
 
   // Get current user ID from localStorage or auth context
@@ -166,6 +166,34 @@ const CustomerOrders = () => {
     return `₱${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   };
 
+  // Fetch user profile including phone number
+  const fetchUserProfile = async () => {
+    try {
+      const userId = getCurrentUserId();
+      const token = getAuthToken();
+      
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await axios.get(
+        `http://localhost:8080/api/users/${userId}`,
+        { headers }
+      );
+      
+      if (response.data) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user profile:', error);
+    }
+    return null;
+  };
+
   // Fetch orders from backend
   const fetchOrders = async () => {
     try {
@@ -183,6 +211,10 @@ const CustomerOrders = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
+      // Fetch user profile first to get phone number
+      const userProfile = await fetchUserProfile();
+      
+      // Then fetch orders
       const response = await axios.get(
         `http://localhost:8080/api/orders/user/${userId}`,
         { headers }
@@ -222,12 +254,13 @@ const CustomerOrders = () => {
             paymentAmount: order.paymentAmount || order.totalAmount || 0,
             transactionId: order.transactionId || 'N/A',
             deliveryTime: '30-45 mins',
-            deliveryAddress: order.deliveryAddress || 'Not specified',
-            contactNumber: order.contactNumber || 'Not provided',
+            pickupAddress: 'Caffinity Shop - Main Branch',
+            deliveryAddress: order.deliveryAddress || 'Caffinity Shop - Main Branch',
+            // Use order's phone number or fall back to user profile
+            phoneNumber: order.phoneNumber || (userProfile ? userProfile.phoneNumber : 'Not provided'),
+            contactNumber: order.phoneNumber || (userProfile ? userProfile.phoneNumber : 'Not provided'),
             notes: order.notes || '',
             updatedAt: order.updatedAt,
-            deliveryFee: order.deliveryFee || 50,
-            tax: order.tax || 0,
             subtotal: order.subtotal || 0
           };
         });
@@ -236,6 +269,9 @@ const CustomerOrders = () => {
         transformedOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
         
         setOrders(transformedOrders);
+        if (userProfile) {
+          setUserProfile(userProfile);
+        }
         setError(null);
       } else {
         console.error('Invalid response format:', response.data);
@@ -328,7 +364,7 @@ const CustomerOrders = () => {
     try {
       console.log(`🔄 Reordering order ${order.id}`);
       
-      navigate('/customer/menu', { 
+      navigate('/customer/coffee', { 
         state: { reorderItems: order.items }
       });
       
@@ -571,7 +607,7 @@ const CustomerOrders = () => {
                       {getStatusIcon(order.status)}
                       {getStatusDisplay(order.status)}
                     </span>
-                    {order.deliveryAddress && order.deliveryAddress !== 'Not specified' && (
+                    {order.deliveryAddress && order.deliveryAddress !== 'Caffinity Shop - Main Branch' && (
                       <span className="delivery-address">
                         <FaMapMarkerAlt /> {order.deliveryAddress.substring(0, 30)}...
                       </span>
@@ -623,9 +659,9 @@ const CustomerOrders = () => {
                     </div>
                     <div className="detail-column">
                       <div className="detail-item">
-                        <span className="detail-label">Pickup</span>
+                        <span className="detail-label">Contact Number</span>
                         <span className="detail-value">
-                          <FaClock /> {order.deliveryTime}
+                          <FaPhone /> {order.phoneNumber}
                         </span>
                       </div>
                       {order.transactionId && order.transactionId !== 'N/A' && (
@@ -647,7 +683,7 @@ const CustomerOrders = () => {
                         className="action-btn reorder-btn"
                         onClick={() => handleReorder(order)}
                       >
-                        <FaRedo /> Reorder
+                        <FaRedo /> Order again
                       </button>
                     )}
                     
@@ -687,10 +723,10 @@ const CustomerOrders = () => {
         </div>
       </main>
 
-      {/* Order Details Modal */}
       {showDetailsModal && selectedOrder && (
-        <div className="order-details-modal">
-          <div className="modal-overlay" onClick={handleCloseDetails}></div>
+      <div className="order-details-modal">
+        <div className="modal-overlay" onClick={handleCloseDetails}></div>
+        <div className="modal-content-wrapper">
           <div className="modal-content">
             {/* Modal Header */}
             <div className="modal-header">
@@ -703,10 +739,8 @@ const CustomerOrders = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Modal Body - Fixed scrolling container */}
             <div className="modal-body">
-              <div className="modal-scroll-container">
-                
               {/* Order Summary */}
               <div className="modal-section">
                 <div className="modal-summary">
@@ -715,7 +749,6 @@ const CustomerOrders = () => {
                     <span className="summary-value">
                       <FaCalendarAlt /> {formatDetailedDate(selectedOrder.date)}
                     </span>
-                  </div>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Status</span>
@@ -784,26 +817,26 @@ const CustomerOrders = () => {
                   <h3><FaCreditCard /> Payment Details</h3>
                   <div className="details-card">
                     <div className="detail-row">
-                      <span>Payment Method</span>
+                      <span className="detail-label">Payment Method</span>
                       <span className="detail-value">
                         {getPaymentMethodIcon(selectedOrder.paymentMethod)}
                         {getPaymentMethodDisplay(selectedOrder.paymentMethod)}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span>Payment Status</span>
+                      <span className="detail-label">Payment Status</span>
                       <span className={`detail-value payment-status ${selectedOrder.paymentStatus?.toLowerCase()}`}>
                         {selectedOrder.paymentStatus || 'Pending'}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span>Transaction ID</span>
+                      <span className="detail-label">Transaction ID</span>
                       <span className="detail-value transaction-id">
                         {selectedOrder.transactionId || 'N/A'}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span>Payment Amount</span>
+                      <span className="detail-label">Payment Amount</span>
                       <span className="detail-value">
                         {formatCurrency(selectedOrder.paymentAmount)}
                       </span>
@@ -812,29 +845,29 @@ const CustomerOrders = () => {
                 </div>
 
                 <div className="modal-section">
-                  <h3><FaTruck /> Delivery Details</h3>
+                  <h3><FaTruck /> Pickup Details</h3>
                   <div className="details-card">
                     <div className="detail-row">
-                      <span>Delivery Address</span>
+                      <span className="detail-label">Pickup Address</span>
                       <span className="detail-value">
                         <FaMapMarkerAlt /> {selectedOrder.deliveryAddress}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span>Contact Number</span>
+                      <span className="detail-label">Contact Number</span>
                       <span className="detail-value">
-                        <FaPhone /> {selectedOrder.contactNumber}
+                        <FaPhone /> {selectedOrder.contactNumber || selectedOrder.phoneNumber}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span>Estimated Delivery</span>
+                      <span className="detail-label">Estimated Pickup Time</span>
                       <span className="detail-value">
                         <FaClock /> {selectedOrder.deliveryTime}
                       </span>
                     </div>
                     {selectedOrder.notes && (
                       <div className="detail-row">
-                        <span>Special Instructions</span>
+                        <span className="detail-label">Special Instructions</span>
                         <span className="detail-value notes">
                           {selectedOrder.notes}
                         </span>
@@ -844,25 +877,17 @@ const CustomerOrders = () => {
                 </div>
               </div>
 
-              {/* Order Summary */}
+              {/* Order Summary - REMOVED delivery fee and tax */}
               <div className="modal-section">
                 <h3>Order Summary</h3>
                 <div className="order-summary-card">
                   <div className="summary-row">
-                    <span>Subtotal ({selectedOrder.itemCount} items)</span>
-                    <span>{formatCurrency(selectedOrder.subtotal || selectedOrder.total - (selectedOrder.deliveryFee || 50) - (selectedOrder.tax || 0))}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Delivery Fee</span>
-                    <span>{formatCurrency(selectedOrder.deliveryFee || 50)}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Tax</span>
-                    <span>{formatCurrency(selectedOrder.tax || 0)}</span>
+                    <span className="summary-label">Subtotal ({selectedOrder.itemCount} items)</span>
+                    <span className="summary-value">{formatCurrency(selectedOrder.subtotal || selectedOrder.total)}</span>
                   </div>
                   <div className="summary-row total">
-                    <span>Total Amount</span>
-                    <span>{formatCurrency(selectedOrder.total)}</span>
+                    <span className="summary-label">Total Amount</span>
+                    <span className="summary-value">{formatCurrency(selectedOrder.total)}</span>
                   </div>
                 </div>
               </div>
@@ -912,7 +937,9 @@ const CustomerOrders = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
+
     </div>
   );
 };
